@@ -1,0 +1,28 @@
+[user]
+	email = jototland@gmail.com
+	name = Jo Totland
+[core]
+	editor = nvim
+[alias]
+	lg = log --oneline --decorate --graph
+	st = status -s
+	cm = commit
+	dt = difftool
+	mt = mergetool
+	co = checkout
+	br = branch
+	unstage = reset HEAD
+[diff]
+	tool = vimdiff
+	mnemonicprefix = true
+[merge]
+	conflictstyle = diff3
+	tool = vimdiff
+[difftool]
+	prompt = false
+[difftool "vimdiff"]
+	path = nvim
+[mergetool "vimdiff"]
+	path = nvim
+[push]
+	default = simple

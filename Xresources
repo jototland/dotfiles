@@ -1,0 +1,12 @@
+xterm*faceName:     Hack
+xterm*faceSize:     12
+xterm*renderFont:   true
+xterm*foreground:   white
+xterm*background:   black
+
+Rxvt*scrollBar:     false
+Rxvt*foreground:    white
+Rxvt*background:    black
+Rxvt*font:          xft:Hack-Regular:pixelsize=16
+Rxvt*boldFont:      xft:Hack-Bold:pixelsize=16:weight=bold
+Rxvt*italicFont:    xft:Hack-RegularOblique:pixelsize=16:slant=italic

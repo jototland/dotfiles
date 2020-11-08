@@ -1,0 +1,23 @@
+if [[ -z "$XDG_RUNTIME_DIR" ]]; then
+    export XDG_RUNTIME_DIR=/run/user/$UID
+    if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
+        export XDG_RUNTIME_DIR=/tmp/$USER-runtime
+        if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
+          mkdir -m 0700 "$XDG_RUNTIME_DIR"
+        fi
+    fi
+fi
+
+if [[ -n "$WSL_DISTRO_NAME" ]]; then
+    if echo $PS1 | grep -v WSL > /dev/null; then
+        export PS1="WSL:$WSL_DISTRO_NAME $PS1"
+    fi
+
+    if [[ -z "$DISPLAY" ]]; then
+        export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
+    fi
+
+    alias ls="ls -I NTUSER.DAT\* --color=auto"
+fi
+
+alias R="R --no-save --no-restore --quiet"

@@ -21,3 +21,7 @@ if [[ -n "$WSL_DISTRO_NAME" ]]; then
 fi
 
 alias R="R --no-save --no-restore --quiet"
+
+source ~/dotfiles/pathutils.sh
+
+path_has $PATH ~/.local/bin || export PATH=$PATH:~/.local/bin

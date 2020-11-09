@@ -149,12 +149,10 @@ nnoremap <silent> <space>fs :Snippets<cr>
 nnoremap <silent> <space>u :<c-u>UndotreeToggle<cr>
 nnoremap <silent> <space>v :Vifm<cr>
 nnoremap <silent> <space>% :MtaJumpToOtherTag<cr>
-nnoremap <F12> :Nuake<CR>
-inoremap <F12> <C-\><C-n>:Nuake<CR>
-tnoremap <F12> <C-\><C-n>:Nuake<CR>
-nnoremap <F2> :Nuake<CR>
-inoremap <F2> <C-\><C-n>:Nuake<CR>
-tnoremap <F2> <C-\><C-n>:Nuake<CR>
+
+nnoremap <c-space>t :<c-u>Nuake<cr>
+inoremap <c-space>t <c-o>:Nuake<cr>
+tnoremap <c-space>t <c-\><c-n>:<c-u>Nuake<cr>
 
 nnoremap <space>~v :edit $MYVIMRC<cr>
 nnoremap <space>~p :edit ~/Documents/WindowsPowerShell/profile.ps1<cr>

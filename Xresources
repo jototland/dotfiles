@@ -7,6 +7,6 @@ xterm*background:   black
 Rxvt*scrollBar:     false
 Rxvt*foreground:    white
 Rxvt*background:    black
-Rxvt*font:          xft:Hack-Regular:pixelsize=16
-Rxvt*boldFont:      xft:Hack-Bold:pixelsize=16:weight=bold
-Rxvt*italicFont:    xft:Hack-RegularOblique:pixelsize=16:slant=italic
+Rxvt*font:          xft:Hack-Regular:pixelsize=14
+Rxvt*boldFont:      xft:Hack-Bold:pixelsize=14:weight=bold
+Rxvt*italicFont:    xft:Hack-RegularOblique:pixelsize=14:slant=italic

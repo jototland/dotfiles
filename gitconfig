@@ -2,7 +2,7 @@
 	email = jototland@gmail.com
 	name = Jo Totland
 [core]
-	editor = nvim
+	editor = vim
 [alias]
 	lg = log --oneline --decorate --graph
 	st = status -s
@@ -21,8 +21,8 @@
 [difftool]
 	prompt = false
 [difftool "vimdiff"]
-	path = nvim
+	path = vim
 [mergetool "vimdiff"]
-	path = nvim
+	path = vim
 [push]
 	default = simple

@@ -15,6 +15,14 @@ report_winsize() {
     Traytip, %title% :, %info%
 }
 
+init_pincode() {
+    static init := False
+    if (!init) {
+        init := True
+        global secret_pincode_set = "no"
+        global secret_pincode := ""
+    }
+}
 
 set_pincode() {
     global secret_pincode, secret_pincode_set
@@ -40,10 +48,11 @@ ensure_pincode_set() {
 
 ; fill out credentials for user n
 credentials_send_pincode_for_user(n) {
+    init_pincode()
     global secret_pincode, secret_pincode_set
     if WinActive("Windows Security") {
         WinGetActiveStats title, width, height, x, y
-        if (height == 349) {
+        if ((height == 349) || (height == 522)) {  ; scale 100%, 150%
             MouseClick, left, 100, 130
             SendInput, {Tab 2}{Space}
             Sleep, 100

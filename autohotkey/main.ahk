@@ -1,10 +1,14 @@
 ﻿#SingleInstance
+#NoEnv
+#InstallKeybdHook
+#Warn
 SetWorkingDir %A_ScriptDir%
 return
 
 #Include hotstrings.ahk
 #Include capslock.ahk
 #Include rdplogin.ahk
+#Include hotkeys.ahk
 
 ; Global hotkeys
 #IfWinActive

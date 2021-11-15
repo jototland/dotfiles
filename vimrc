@@ -15,38 +15,43 @@ if has('viminfo')
 endif
 "}}}
 
-" fix meta key for Vim in terminal {{{
-if !has('nvim') && !has('gui_running') && !has('win32')
-    let s:meta_key_exceptions = ['O', '"', '[', ']', '|']
-    function! MetaKeysEnable()
-        let s:meta_keys_enabled = 1
-        for c in range(33, 127)
-            if index(s:meta_key_exceptions, nr2char(c)) !=# -1
-                continue
-            endif
-            execute 'set <m-char-' . c . ">=\e" . nr2char(c)
-        endfor
-        execute "set <m-c-b>=\e\<c-b>"
-        execute "set <m-c-f>=\e\<c-f>"
-    endfunction
-    function! MetaKeysDisable() abort
-        silent! unlet s:meta_keys_enabled
-        for c in range(1, 127)
-            execute 'set <m-char-' . c . '>='
-        endfor
-    endfunction
-    function! MetaKeysToggle() abort
-        if exists('s:meta_keys_enabled')
-            call MetaKeysDisable()
-        else
-            call MetaKeysEnable()
-        endif
-    endfunction
-    command! -nargs=0 MetaKeysEnable call MetaKeysEnable()
-    command! -nargs=0 MetaKeysDisable call MetaKeysDisable()
-    command! -nargs=0 MetaKeysToggle call MetaKeysToggle()
-    MetaKeysEnable " also fucks up some keyboard macros
-endif
+" "fix" meta key for Vim in terminal {{{
+
+" Note: this works only partly, it will not work with macros,
+" or 8-bit terminals if you use the wrong characters (f,x,e in norwegian).
+" Therefore I no longer use this setting.
+
+" if !has('nvim') && !has('gui_running') && !has('win32')
+"     let s:meta_key_exceptions = ['O', '"', '[', ']', '|']
+"     function! MetaKeysEnable()
+"         let s:meta_keys_enabled = 1
+"         for c in range(33, 127)
+"             if index(s:meta_key_exceptions, nr2char(c)) !=# -1
+"                 continue
+"             endif
+"             execute 'set <m-char-' . c . ">=\e" . nr2char(c)
+"         endfor
+"         execute "set <m-c-b>=\e\<c-b>"
+"         execute "set <m-c-f>=\e\<c-f>"
+"     endfunction
+"     function! MetaKeysDisable() abort
+"         silent! unlet s:meta_keys_enabled
+"         for c in range(1, 127)
+"             execute 'set <m-char-' . c . '>='
+"         endfor
+"     endfunction
+"     function! MetaKeysToggle() abort
+"         if exists('s:meta_keys_enabled')
+"             call MetaKeysDisable()
+"         else
+"             call MetaKeysEnable()
+"         endif
+"     endfunction
+"     command! -nargs=0 MetaKeysEnable call MetaKeysEnable()
+"     command! -nargs=0 MetaKeysDisable call MetaKeysDisable()
+"     command! -nargs=0 MetaKeysToggle call MetaKeysToggle()
+"     MetaKeysEnable " also fucks up some keyboard macros
+" endif
 " }}}
 
 " {{{ options
@@ -90,7 +95,7 @@ if has("gui_running")
     endif
 endif
 
-set number
+set number nofoldenable
 try | set signcolumn=number "has("patch-8.1.1564")
 catch | set signcolumn=yes
 endtry
@@ -140,33 +145,10 @@ nnoremap g0 0
 nnoremap $ g$
 nnoremap g$ $
 
-nnoremap <c-n> <c-d>
-nnoremap <c-p> <c-u>
 nnoremap <c-j> <nop>
 nnoremap <c-k> <nop>
 
-inoremap <expr><c-d> <sid>check_back_space() ? "\<c-d>" : "\<del>"
-
-MapCmd nxt <m-h> wincmd h
-MapCmd nxt <m-j> wincmd j
-MapCmd nxt <m-k> wincmd k
-MapCmd nxt <m-l> wincmd l
-
-MapCmd nxt <m-1> tabnext 1
-MapCmd nxt <m-2> tabnext 2
-MapCmd nxt <m-3> tabnext 3
-MapCmd nxt <m-4> tabnext 4
-MapCmd nxt <m-5> tabnext 5
-MapCmd nxt <m-6> tabnext 6
-MapCmd nxt <m-7> tabnext 7
-MapCmd nxt <m-8> tabnext 8
-MapCmd nxt <m-9> tabnext 9
-MapCmd nxt <m-10> tabnext 10
-
-inoremap <m-h> <c-o>h
-inoremap <m-j> <c-o>j
-inoremap <m-k> <c-o>k
-inoremap <m-l> <c-o>a
+" inoremap <expr><c-d> <sid>check_back_space() ? "\<c-d>" : "\<del>"
 
 nnoremap f<cr> ;
 nnoremap F<cr> ,
@@ -176,9 +158,9 @@ nnoremap T<cr> ,
 nnoremap q <nop>
 nnoremap qq q
 
-inoremap <expr> jk pumvisible()? '<c-e>' : '<esc>'
-cnoremap jk <c-c><esc>
-tnoremap jk <c-\><c-n>
+" inoremap <expr> jk pumvisible()? '<c-e>' : '<esc>'
+" cnoremap jk <c-c><esc>
+" tnoremap jk <c-\><c-n>
 
 inoremap <expr> <c-n> pumvisible() ? '<down>' : '<c-n>'
 inoremap <expr> <c-p> pumvisible() ? '<up>' : '<c-p>'
@@ -187,36 +169,9 @@ inoremap <expr> <c-k> pumvisible() ? '<up>' : '<c-k>'
 inoremap <expr> <tab> pumvisible() ? '<c-y>' : '<tab>'
 inoremap <expr> <cr> pumvisible() ? '<c-y>' : '<c-g>u<cr>'
 
-" inoremap gqip <esc>gqip
-" inoremap ;w <esc>:w<cr>
 inoremap <c-^> <esc><c-^>
-" inoremap ;<cr> <c-o>A;<c-g>u<cr>
-
-inoremap <f10>ae æ
-inoremap <f10>oe ø
-inoremap <f10>aa å
-inoremap <f10>AE Æ
-inoremap <f10>OE Ø
-inoremap <f10>AA Å
-inoremap <f10>ss ß
-inoremap <f10>oo º
-inoremap <f10>' <c-k>'
-inoremap <f10>` <c-k>`
-inoremap <f10>" <c-k>"
-inoremap <f10>v <c-k><
-inoremap <f10>^ <c-k>>
-inoremap <f10>~ <c-k>~
-inoremap <f10>, <c-k>,
-inoremap <f10>. <c-k>.
-inoremap <f10>* <c-k>*
 
 nnoremap gb :buffers<cr>:b<space>
-
-for c in split('hjklHJKL', '\zs')
-    execute 'nnoremap <m-' . c . '> <c-w>' . c
-    execute 'vnoremap <m-' . c . '> <c-w>' . c
-    execute 'tnoremap <m-' . c . '> <c-\><c-n><c-w>' . c
-endfor
 
 augroup vimrc_terminal
     autocmd!
@@ -260,7 +215,7 @@ function! Echoq(...)
     let args = join(a:000, ' ')
     echo args
 endfunction
-command -nargs=* Echoq call Echoq(<q-args>)
+command! -nargs=* Echoq call Echoq(<q-args>)
 
 command! Rtp Redir echo &rtp|s/,/\r/g
 
@@ -288,15 +243,46 @@ endfunction
 
 augroup vimrc-auto-mkdir
     autocmd!
-    autocmd BufWritePre * call s:auto_mkdir(expand('<afile>:p:h'), v:cmdbang)
-    function! s:auto_mkdir(dir, force)
-        if !isdirectory(a:dir)
-            \   && (a:force
-            \       || input("'" . a:dir . "' does not exist. Create? [y/N]") =~? '^y\%[es]$')
-            call mkdir(iconv(a:dir, &encoding, &termencoding), 'p')
+    autocmd BufWritePre * call s:auto_mkdir_for_file(expand('<afile>:p'), v:cmdbang)
+augroup END
+function! s:auto_mkdir_for_file(file, force)
+    let dir = fnamemodify(a:file, ':h')
+    if !isdirectory(dir)
+        \   && (a:force
+        \       || input("'" . dir . "' does not exist. Create? [y/N]") =~? '^y\%[es]$')
+        call mkdir(iconv(dir, &encoding, &termencoding), 'p')
+    endif
+endfunction
+
+if has('win32')
+    function! s:win32_fix_gf(ctrlw)
+        let filename = expand('<cfile>')
+        let ctrlw = a:ctrlw ? "\<c-w>" : ''
+        let tn = a:ctrlw ? 'tabnew ' : ''
+        let filename = substitute(filename, '\\\\', '\\', 'g')
+        if filename =~# '^[./\\]' || filename =~? '[a-z]:\\'
+            execute tn . 'edit ' . fnameescape(filename)
+        else
+            let path = split(&path, '[^\\]\zs[, ]')
+            for p in path
+                let p = substitute([, '\\\([, \\]\)', '\1', 'g')
+                let p = substitute(p, '[\\/:]$,', '', 'g')
+                if p == ''
+                    let p = '.'
+                elseif p == '.'
+                    let p = expand('%:h')
+                endif
+                let f = p . '\' . filename
+                if filereadable(f)
+                    execute tn . 'edit ' . fnameescape(f)
+                    break
+                endif
+            endfor
         endif
     endfunction
-augroup END
+    nnoremap <silent> gf :call <sid>win32_fix_gf(0)<cr>
+    nnoremap <silent> <c-w>gf :call <sid>win32_fix_gf(1)<cr>
+endif
 
 " Append modeline after last line in buffer.
 " Use substitute() instead of printf() to handle '%%s' modeline in LaTeX
@@ -488,79 +474,72 @@ endfunction
 
 " {{{ osc52
 
-if !has('clipboard') || (has('x11') && !exists('$DISPLAY'))
-    let s:b64 = [
-        \ 'A','B','C','D','E','F','G','H','I','J','K','L','M',
-        \ 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-        \ 'a','b','c','d','e','f','g','h','i','j','k','l','m',
-        \ 'n','o','p','q','r','s','t','u','v','w','x','y','z',
-        \ '0','1','2','3','4','5','6','7','8','9','+', '*' ]
+let s:b64 = [
+    \ 'A','B','C','D','E','F','G','H','I','J','K','L','M',
+    \ 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+    \ 'a','b','c','d','e','f','g','h','i','j','k','l','m',
+    \ 'n','o','p','q','r','s','t','u','v','w','x','y','z',
+    \ '0','1','2','3','4','5','6','7','8','9','+', '*' ]
 
-    function! Base64Enc(text)
-        let i = 0
-        let n = len(a:text)
-        let result = ''
-        while i < n
-            let i1 = char2nr(a:text[i])
-            let i2 = (i+1 < n ? char2nr(a:text[i+1]) : 0)
-            let i3 = (i+2 < n ? char2nr(a:text[i+2]) : 0)
-            let o1 = i1 / 4
-            let o2 = or(and(i1, 3) * 16, i2 / 16)
-            let o3 = or(and(i2, 15) * 4, i3 / 64)
-            let o4 = and(i3, 63)
-            let result = result . s:b64[o1] . s:b64[o2] .
-                \ (i+1 < n ? s:b64[o3] : '=') .
-                \ (i+2 < n ? s:b64[o4] : '=')
-            let i += 3
-        endwhile
-        return result
-    endfunction
+function! Base64Enc(text)
+    let i = 0
+    let n = len(a:text)
+    let result = ''
+    while i < n
+        let i1 = char2nr(a:text[i])
+        let i2 = (i+1 < n ? char2nr(a:text[i+1]) : 0)
+        let i3 = (i+2 < n ? char2nr(a:text[i+2]) : 0)
+        let o1 = i1 / 4
+        let o2 = or(and(i1, 3) * 16, i2 / 16)
+        let o3 = or(and(i2, 15) * 4, i3 / 64)
+        let o4 = and(i3, 63)
+        let result = result . s:b64[o1] . s:b64[o2] .
+            \ (i+1 < n ? s:b64[o3] : '=') .
+            \ (i+2 < n ? s:b64[o4] : '=')
+        let i += 3
+    endwhile
+    return result
+endfunction
 
-    function! Osc52Send(text)
-        silent execute '!echo ' .
-            \ shellescape("\e]52;c;" . Base64Enc(a:text) . "\x07")
-        redraw!
-    endfunction
+function! Osc52Send(text)
+    silent execute '!echo ' .
+        \ shellescape("\e]52;c;" . Base64Enc(a:text) . "\x07")
+    redraw!
+endfunction
 
-    function Osc52_Op(type, op) abort
-        let oldA = getreginfo('a')
-        if a:type ==# 'char'
-            normal! `[v`]"ay
-        elseif a:type ==# 'line'
-            normal! `[V`]"ay
-        elseif a:type ==# 'block'
-            execute "normal! `[\<c-v>`]\"ay"
-        elseif a:type ==# 'V'
-            normal gv"aY
-        elseif a:type ==# 'v' || a:type ==# "\<c-v>"
-            execute 'normal! g' . a:type . '"ay'
-        else
-            return
-        endif
-        call Osc52Send(@a)
-        call setreg('a', oldA)
-    endfunction
+function! Osc52_Op(type, op) abort
+    let oldA = getreginfo('a')
+    if a:type ==# 'char'
+        normal! `[v`]"ay
+    elseif a:type ==# 'line'
+        normal! `[V`]"ay
+    elseif a:type ==# 'block'
+        execute "normal! `[\<c-v>`]\"ay"
+    elseif a:type ==# 'V'
+        normal gv"aY
+    elseif a:type ==# 'v' || a:type ==# "\<c-v>"
+        execute 'normal! g' . a:type . '"ay'
+    else
+        return
+    endif
+    call Osc52Send(@a)
+    call setreg('a', oldA)
+endfunction
 
-    function! Osc52Delete(type)
-        call Osc52_Op(a:type, 'd')
-    endfunction
+function! Osc52Delete(type)
+    call Osc52_Op(a:type, 'd')
+endfunction
 
-    function! Osc52Yank(type)
-        call Osc52_Op(a:type, 'y')
-    endfunction
+function! Osc52Yank(type)
+    call Osc52_Op(a:type, 'y')
+endfunction
 
-    nnoremap "+y :set operatorfunc=Osc52Yank<cr>g@
-    nnoremap "+yy m[m]:call Osc52Yank('line')<cr>
-    nnoremap "+Y :set operatorfunc=Osc52Yank<cr>g@$
-    xnoremap "+y :call Osc52Yank(visualmode())<cr>
-    xnoremap "+Y :call Osc52Yank('V')<cr>
+nnoremap <space>y :set operatorfunc=Osc52Yank<cr>g@
+nnoremap <space>yy m[m]:call Osc52Yank('line')<cr>
+nnoremap <space>Y :set operatorfunc=Osc52Yank<cr>g@$
+xnoremap <space>y :call Osc52Yank(visualmode())<cr>
+xnoremap <space>Y :call Osc52Yank('V')<cr>
 
-    nnoremap "*y :set operatorfunc=Osc52Yank<cr>g@
-    nnoremap "*yy m[m]:call Osc52Yank('line')<cr>
-    nnoremap "*Y :set operatorfunc=Osc52Yank<cr>g@$
-    xnoremap "*y :call Osc52Yank(visualmode())<cr>
-    xnoremap "*Y :call Osc52Yank('V')<cr>
-endif
 " }}}
 
 " {{{ MatchTagAlways
@@ -580,23 +559,6 @@ if !exists("g:loaded_matchit")
 endif
 " }}}
 
-" {{{ vim-tmux-navigator
-if executable('tmux')
-    let g:tmux_navigator_no_mappings = 1
-    let g:tmux_navigator_disable_when_zoomed = 1
-
-    PkgInstall christoomey/vim-tmux-navigator
-
-    if PkgInstalled('vim-tmux-navigator')
-        MapCmd nxt <m-h> TmuxNavigateLeft
-        MapCmd nxt <m-j> TmuxNavigateDown
-        MapCmd nxt <m-k> TmuxNavigateUp
-        MapCmd nxt <m-l> TmuxNavigateRight
-        MapCmd nxt <m-\> TmuxNavigatePrevious
-    endif
-endif
-" }}}
-
 " {{{ termmm.vim
 PkgInstall jototland/termmm.vim
 let g:termmm_config = get(g:, 'termmm_config', {})
@@ -606,11 +568,6 @@ let g:termmm_config['grip'] = {'cmd':'python3 -m grip', 'nofocus':1}
 let g:termmm_config['gitbash'] = {'cmd': 'C:\Program Files\Git\bin\bash.exe'}
 let g:termmm_config['django'] = {'cmd': 'python manage.py runserver', 'nofocus': 1}
 command! -nargs=0 Grip Ttoggle grip
-MapCmd nxt <m-t>t Ttoggle shell
-MapCmd nxt <m-t>p Ttoggle python
-MapCmd nxt <m-t>r Ttoggle R
-MapCmd nxt <m-t>m Ttoggle make
-MapCmd nxt <m-t>h ThideAll
 MapCmd nxt qtt Ttoggle shell
 MapCmd nxt qtp Ttoggle python
 MapCmd nxt qtr Ttoggle R
@@ -618,9 +575,66 @@ MapCmd nxt qtm Ttoggle make
 MapCmd nxt qth ThideAll
 " }}}
 
+" {{{ Whitespace at end of line
+
+" (Always) highlight whitespace at end of line
+highlight EOLWhiteSpace ctermbg=red guibg=red
+let w:eolwhitespacematch = matchadd('EOLWhiteSpace', '\s\+\%#\@<!$')
+
+augroup EOLWhitespace
+    autocmd!
+    autocmd Colorscheme *
+        \ highlight EOLWhiteSpace ctermbg=red guibg=red
+    autocmd WinNew *
+        \ if &buftype == '' |
+        \ let w:eolwhitespacematch =  matchadd('EOLWhiteSpace', '\s\+$', 10) |
+        \ endif
+    autocmd InsertEnter *
+        \ if &buftype == '' |
+        \ silent! call matchdelete(w:eolwhitespacematch) |
+        \ silent! call matchadd('EOLWhiteSpace', '\s\+\%#\@<!$', 10, w:eolwhitespacematch) |
+        \ endif
+    autocmd InsertLeave *
+        \ if &buftype == '' |
+        \ silent! call matchdelete(w:eolwhitespacematch) |
+        \ silent! call matchadd('EOLWhiteSpace', '\s\+$', 10, w:eolwhitespacematch) |
+        \ endif
+augroup END
+
+
+" command Trim: trim whitespace at end of line
+command! -nargs=0 -range=% -bar Trim call s:trim(<line1>, <line2>)
+
+function! s:trim(firstLine, lastLine)
+    if &buftype ==# ''
+        let oldview = winsaveview()
+        execute a:firstLine . ',' . a:lastLine . ' s/\s\+$//e'
+        call winrestview(oldview)
+    endif
+endfunction
+
+
+" For all files except files except those already containing whitespace at end of lines,
+" or markdown files, automatically remove whitespace at end of lines when saving.
+function! s:autotrim_enable_if_safe()
+    if exists('b:autotrim')
+        return
+    endif
+    if &buftype == '' && execute('s/\s\+$//ne') ==# '' && &filetype != 'markdown'
+        let b:autotrim = 1
+    endif
+endfunction
+
+augroup AutoTrim
+    autocmd!
+    autocmd BufWinEnter * call <sid>autotrim_enable_if_safe()
+    autocmd BufWritePre * if get(b:, 'autotrim', 0) | %Trim | endif
+augroup END
+" }}}
+
 " {{{ window manipulation
-nnoremap qv :<c-u>call Grid(v:count, 'vertical')<cr>
-nnoremap qs :<c-u>call Grid(v:count, 'horizontal')<cr>
+nnoremap qs :<c-u>call Grid(v:count, 'vertical')<cr>
+nnoremap qv :<c-u>call Grid(v:count, 'horizontal')<cr>
 nnoremap qa :<c-u>call Grid(2, 'vertical')<cr>
 
 nnoremap qf :<c-u>call Focus(v:count, 'left')<cr>
@@ -628,19 +642,10 @@ nnoremap qF :<c-u>call Focus(v:count, 'right')<cr>
 
 nnoremap qz :<c-u>Zoom<cr>
 
-nnoremap qh <c-w>h
-nnoremap qj <c-w>j
-nnoremap qk <c-w>k
-nnoremap ql <c-w>l
-nnoremap qH :<c-u>call SwapWin('h')<cr>
-nnoremap qJ :<c-u>call SwapWin('j')<cr>
-nnoremap qK :<c-u>call SwapWin('k')<cr>
-nnoremap qL :<c-u>call SwapWin('l')<cr>
-
-nnoremap <m-H> :<c-u>call SwapWin('h')<cr>
-nnoremap <m-J> :<c-u>call SwapWin('j')<cr>
-nnoremap <m-K> :<c-u>call SwapWin('k')<cr>
-nnoremap <m-L> :<c-u>call SwapWin('l')<cr>
+nnoremap qh :<c-u>call SwapWin('h')<cr>
+nnoremap qj :<c-u>call SwapWin('j')<cr>
+nnoremap qk :<c-u>call SwapWin('k')<cr>
+nnoremap ql :<c-u>call SwapWin('l')<cr>
 
 command! -count=1 -bar FocusR call Focus(<count>, 'right')
 command! -nargs=0 -bar Zoom call Zoom()
@@ -751,7 +756,7 @@ function! Grid(n_outer, inner_direction)
     silent! call win_gotoid(win_findbuf(buf)[0])
 endfunction
 
-function WindowIdentify(...)
+function! WindowIdentify(...)
     let cursorcolumn = &cursorcolumn
     let cursorline = &cursorline
     let colorcolumn = &colorcolumn
@@ -765,11 +770,11 @@ function WindowIdentify(...)
     let &cursorline=cursorline
     let &colorcolumn=colorcolumn
 endfunction
-command -nargs=* WindowIdentify call WindowIdentify(<f-args>)
+command! -nargs=* WindowIdentify call WindowIdentify(<f-args>)
 
 nnoremap qr :<c-u>call Resize()<cr>
 let g:resize_step = 5
-function Resize()
+function! Resize()
     while 1
         echo "resize mode [<esc> q hjkl HJKL] "
         let n=getchar()
@@ -841,8 +846,8 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
 
         nnoremap <space>cc :CocCommand<space>
 
-        imap <m-s> <plug>(coc-snippets-expand)
-        xmap <c-s> <plug>(coc-convert-snippet)
+        imap <f2> <plug>(coc-snippets-expand)
+        xmap <s-f2> <plug>(coc-convert-snippet)
         let g:coc_snippets_next = '<c-j>'
         let g:coc_snippets_prev = '<c-k>'
 
@@ -945,11 +950,14 @@ if PkgInstalled('fzf')
         endif
     endfunction
 
+    nnoremap <space>f :Files<cr>
+    nnoremap <space>b :Buffers<cr>
+
     augroup vimrc_fzf
         autocmd!
         autocmd filetype fzf tnoremap <c-j> <c-n>
         autocmd filetype fzf tnoremap <c-k> <c-p>
-        autocmd filetype fzf tnoremap <buffer> jk <esc>
+        " autocmd filetype fzf tnoremap <buffer> jk <esc>
     augroup END
     if has("win32")
         let g:fzf_preview_window = ''
@@ -981,7 +989,7 @@ augroup END
 
 " {{{ emmet
 PkgInstall mattn/emmet-vim
-let g:user_emmet_leader_key = '<m-m>'
+let g:user_emmet_leader_key = '<f3>'
 " }}}
 
 " vim-cycle, vim-speeddating: <c-x> / <c-a> manipulation {{{
@@ -1220,23 +1228,36 @@ augroup vimrc
     autocmd!
     autocmd filetype vim setlocal foldmethod=marker foldcolumn=2 formatoptions-=o
     autocmd filetype jsonc,json5 setlocal commentstring=//%s
+    autocmd filetype sql setlocal commentstring=--%s
     autocmd filetype html if DetectRoot('<afile>', 'manage.py') !=# ''
         \ | setlocal filetype=htmldjango
         \ | call s:htmldjangoSettings() | endif
     autocmd filetype html,css,htmldjango setlocal sw=2 sts=2
     autocmd filetype make,snippets setlocal sw=8 sts=8 noexpandtab
     autocmd filetype autohotkey let &commentstring=';%s'
-    autocmd TextChanged,TextChangedI * call AutoSaveIfVersionControlled()
+    " autocmd TextChanged,TextChangedI * call AutoSaveIfVersionControlled() " FIXME: broken?
     autocmd filetype htmldjango call s:htmldjangoSettings()
     autocmd QuickFixCmdPost [^l]* nested cwindow
     autocmd QuickFixCmdPost    l* nested lwindow
+    autocmd InsertEnter * set cursorline
+    autocmd InsertLeave * set nocursorline
     " autocmd InsertEnter * set cursorline cursorcolumn
-    autocmd InsertEnter * nested colorscheme peachpuff
     " autocmd InsertLeave * set nocursorline nocursorcolumn
-    autocmd InsertLeave * nested colorscheme darkblue
+    " autocmd InsertEnter * nested colorscheme industry
+    " autocmd InsertLeave * nested colorscheme darkblue
+    " autocmd InsertEnter * highlight Normal guibg=#000060
+    " autocmd InsertLeave * highlight Normal guibg=#000040
 augroup END
 
-function AutoSaveIfVersionControlled() abort
+nmap <leader>sp :call <SID>SynStack()<CR>
+function! <SID>SynStack()
+    if !exists("*synstack")
+        return
+    endif
+    echo map(synstack(line('.'), col('.')), 'synIDattr(v:val, "name")')
+endfunc
+
+function! AutoSaveIfVersionControlled() abort
     if !exists('b:is_version_controlled')
         let b:is_version_controlled = (DetectRoot('%', '.git') !=# "")
     endif
@@ -1277,37 +1298,15 @@ PkgInstall tpope/vim-scriptease
 PkgInstall tpope/vim-surround
 PkgInstall tpope/vim-unimpaired
 
-PkgInstall tpope/vim-projectionist
-" " (see: https://github.com/vim/vim/issues/5820)
-" AfterVimEnter autocmd! projectionist BufFilePost
-
 PkgInstall Konfekt/FastFold
 PkgInstall ConradIrwin/vim-bracketed-paste
 PkgInstall tmux-plugins/vim-tmux
 PkgInstall wellle/targets.vim
 PkgInstall wellle/context.vim
+let g:context_enabled = 0
 PkgInstall wellle/visual-split.vim
 PkgInstall AndrewRadev/splitjoin.vim
 PkgInstall Chandlercjy/vim-markdown-edit-code-block
-" let g:winresizer_start_key = 'qr'
-" let g:winresizer_gui_start_key = 'qR'
-" let g:winresizer_gui_enable = 1
-" nnoremap qw <c-w>
-" PkgInstall simeji/winresizer
-PkgInstall joeytwiddle/sexy_scroller.vim
-
-" PkgInstall vimwiki/vimwiki
-
-" let g:mydict = [{1: 'one', 2: 'two', 3: 'three'}]
-" let g:vimwiki_list = [
-"     \     {
-"     \         'path_html' : '~/vimwiki_html/',
-"     \         'template_path': '~/vimwiki_html/templates/',
-"     \         'template_default': 'default',
-"     \         'template_ext': '.html'},
-"     \ ]
-" nnoremap <leader>wS :VimwikiSearch //<left>
-" nnoremap <Leader>wp :Files ~/vimwiki/<CR>
 
 " Note taking app NV
 if executable('rg')
@@ -1317,10 +1316,6 @@ if executable('rg')
     nnoremap <space>n :<c-u>NV<cr>
     let g:nv_create_note_key = 'ctrl-x'
     let g:nv_create_note_window = 'split'
-    augroup vimrc_nv
-        autocmd!
-        " autocmd filetype nv tnoremap <buffer> jk <esc>
-    augroup END
 endif
 
 PkgInstall dhruvasagar/vim-table-mode
@@ -1332,7 +1327,6 @@ if executable('ctags-exuberant')
     endif
 endif
 
-PkgInstall ntpeters/vim-better-whitespace
 PkgInstall metakirby5/codi.vim
 if has('python3')
     PkgInstall puremourning/vimspector { 'type' : 'opt' }
@@ -1341,7 +1335,6 @@ if has('python3')
     endif
 endif
 PkgInstall kshenoy/vim-signature
-" PkgInstall iamcco/markdown-preview.nvim { 'do': 'cd app && yarn install' }
 PkgInstall iamcco/markdown-preview.nvim { 'do': 'packloadall | call mkdp#util#install()' }
 
 " }}}

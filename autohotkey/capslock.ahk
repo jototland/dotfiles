@@ -1,82 +1,124 @@
 ﻿#SingleInstance
 #Warn
 
-; Set Caps Lock to Compose Key.
-; You can still double press if you want the original Caps Lock.
-; You can also use Caps Lock as a modifier (see below)
-$*CapsLock up::
-    if (A_PriorHotKey == "$*CapsLock") {
-        if (!compose_dbl_click) {
-            compose()
-        }
-    }
+; Set Caps Lock to Compose Key
+*CapsLock::return
+CapsLock::
+    compose()
 return
 
-$*CapsLock::
-    compose_init()
-    if (A_PriorHotkey == "$*CapsLock up" && A_TimeSincePriorHotkey < 200) {
-        compose_dbl_click := True
-        compose_found := False
-        compose_input_hook.stop()
-        SetCapsLockState, % GetKeyState("CapsLock", "T") ? "Off": "On"
-    } else {
-        compose_dbl_click := False
-    }
-return
-
+; Also use Caps Lock as a modifier
 #If GetKeyState("CapsLock", "P")
-a::Home
-c::CtrlBreak
-d::Del
-e::End
-h::Left
-j::Down
-k::Up
-l::Right
-n::PgDn
-p::PgUp
-v::paste_text()
-9::«
-0::»
-+(::‹
-+)::›
-^9::“
-^0::”
-^+(::‘
-^+)::’
-'::SendEvent, % GetKeyState("CapsLock", "T") ? "Æ" : "æ"
-+'::SendEvent, % GetKeyState("CapsLock", "T") ? "æ" : "Æ"
-`;::SendEvent, % GetKeyState("CapsLock", "T") ? "Ø" : "ø"
-+`;::SendEvent, % GetKeyState("CapsLock", "T") ? "ø" : "Ø"
-[::SendEvent, % GetKeyState("CapsLock", "T") ? "Å" : "å"
-+[::SendEvent, % GetKeyState("CapsLock", "T") ? "å" : "Å"
+    a::
+        if (GetKeyState("CapsLock", "T")) {
+            SetCapsLockState, off
+        } else {
+            SetCapsLockState, on
+        }
+    return
+    c::
+        compose_stop()
+        SendEvent, {Ctrl down}{CtrlBreak}{Ctrl up}
+    return
+    e::
+        compose_stop()
+        SendEvent, {Escape}
+    return
+    Space::
+        compose_stop()
+        arrow_mode("toggle")
+    return
+    s::
+        compose_stop()
+        SendEvent, {ScrollLock}
+    return
+    i::
+        compose_stop()
+        SendEvent, {Insert}
+    return
+    '::
+        compose_stop()
+        SendInput, æ
+    return
+    "::
+        compose_stop()
+        SendInput, Æ
+    return
+    `;::
+        compose_stop()
+        SendInput, ø
+    return
+    :::
+        compose_stop()
+        SendInput, Ø
+    return
+    [::
+        compose_stop()
+        SendInput, å
+    return
+    {::
+        compose_stop()
+        SendInput, Å
+    return
+    *h::
+        compose_stop()
+        SendInput, {Blind}{Left}
+    return
+    *j::
+        compose_stop()
+        SendInput, {Blind}{Down}
+    return
+    *k::
+        compose_stop()
+        SendInput, {Blind}{Up}
+    return
+    *l::
+        compose_stop()
+        SendInput, {Blind}{Right}
+    return
+    *u::
+        compose_stop()
+        SendInput, {Blind}{Home}
+    return
+    *m::
+        compose_stop()
+        SendInput, {Blind}{End}
+    return
+    *o::
+        compose_stop()
+        SendInput, {Blind}{PgUp}
+    return
+    *.::
+        compose_stop()
+        SendInput, {Blind}{PgDn}
+    return
 #If
-
-paste_text() {
-    saveOldClipboard := ClipBoardAll
-    Clipboard := ClipBoard
-    SendInput ^v
-    Sleep 50
-    ClipBoard := saveOldClipboard
-}
-
-; Use the ISO extra key for something useful too
-VKE2::
-return
 
 compose() {
     global compose_sequences
     global compose_found
     global compose_input_hook
+    compose_init()
+    compose_found := False
     compose_input_hook.start()
     compose_input_hook.wait()
     text := compose_input_hook.input
     if (compose_found) {
         replacement := compose_sequences.item(text)
-        SendInput, %replacement%
+        if (IsFunc(replacement)) {
+            replacement.Call()
+        } else {
+            SendInput, %replacement%
+        }
     } else {
         SendInput, %text%
     }
+}
+
+compose_stop() {
+    compose_init()
+    global compose_input_hook
+    compose_input_hook.stop()
 }
 
 compose_key_down(ih, vk, sc) {
@@ -85,36 +127,44 @@ compose_key_down(ih, vk, sc) {
     text := ih.input
     still_hope := False
     compose_found := False
-    for key in compose_sequences {
-        if (key == text) {
-            compose_found := True
-            break
+    if (compose_sequences.Exists(text)) {
+        compose_found := True
+    } else {
+        for key in compose_sequences {
+            if RegExMatch(key, "^\Q" . text . "\E")
+                still_hope := True
         }
-        if RegExMatch(key, "^\Q" . text . "\E")
-            still_hope := True
     }
     if (compose_found || !still_hope) {
         ih.stop()
     }
 }
 
+vim() {
+    local USERPROFILE
+    EnvGet USERPROFILE, USERPROFILE
+    Run, gvim.bat, %USERPROFILE%
+}
+
 compose_init() {
     static init := False
     if (!init) {
         init := True
-        global compose_input_hook := InputHook("", "{CtrlBreak}")
+        global compose_input_hook := InputHook("", "{CtrlBreak}{Esc}{Backspace}{Del}{CapsLock}{ScrollLock}")
         compose_input_hook.KeyOpt("{All}", "N")
         compose_input_hook.OnKeyDown := Func("compose_key_down")
         global compose_sequences := ComObjCreate("Scripting.Dictionary")
+        ; Norway: æøå
         compose_sequences.Add("ae", "æ")
-        compose_sequences.Add("o/", "ø")
-        compose_sequences.Add("aa", "å")
+        compose_sequences.Add("/o", "ø")
+        compose_sequences.Add("oa", "å")
         compose_sequences.Add("AE", "Æ")
-        compose_sequences.Add("O/", "Ø")
-        compose_sequences.Add("AA", "Å")
+        compose_sequences.Add("/O", "Ø")
+        compose_sequences.Add("oA", "Å")
 
         ;; umlaut äëïöüÄËÏÖÜ
         compose_sequences.Add(""" ", "̈¨")
+
         ; umlaut minuscule
         compose_sequences.Add("""a", "ä")
         compose_sequences.Add("""e", "ë")
@@ -145,7 +195,7 @@ compose_init() {
         compose_sequences.Add("``U", "Ù")
         compose_sequences.Add("``Y", "Ỳ")
         ;; acute áćéíĺńóṕŕśúýźÁĆÉÍĹŃÓṔŔŚÚÝŹ
-        compose_sequences.Add("' ", "´")
+        compose_sequences.Add("'`n", "´")
         ; acute minuscule
         compose_sequences.Add("'a", "á")
         compose_sequences.Add("'e", "é")
@@ -193,14 +243,12 @@ compose_init() {
         compose_sequences.Add(">>", "»")
         compose_sequences.Add("> ", "›")
         compose_sequences.Add("< ", "‹")
-        compose_sequences.Add("""<", "“") ; upper 66
-        compose_sequences.Add(""">", "”") ; upper 99
-        compose_sequences.Add(""",", "„") ; lower 99
-        ; """": "‟" ; upper reversed 99
-        compose_sequences.Add("'<", "‘") ; upper 6
-        compose_sequences.Add("'>", "’") ; upper 9
-        compose_sequences.Add("',", "‚") ; lower 9
-        ; "''": "‛" ; upper reversed 9
+        compose_sequences.Add("````", "“") ; upper 66 quote
+        compose_sequences.Add("''", "”") ; upper 99 quote
+        compose_sequences.Add(",,", "„") ; lower 99 quote
+        compose_sequences.Add("`` ", "‘") ; upper 6 quote
+        compose_sequences.Add("' ", "’") ; upper 9 quote
+        compose_sequences.Add(", ", "‚") ; lower 9 quote
         ; special punctuation
         compose_sequences.Add("??", "¿")
         compose_sequences.Add("!!", "¡")
@@ -227,14 +275,14 @@ compose_init() {
         compose_sequences.Add(" t", " ")        ; thin space (inside quotation marks)
         ; other signs
         compose_sequences.Add("No", "№")            ; numero
-        compose_sequences.Add("co", "℅")            ; c/o
+        compose_sequences.Add("c/o", "℅")            ; c/o
         compose_sequences.Add("AS", "⅍")            ; A/S
         compose_sequences.Add("So", "§")            ; section
         compose_sequences.Add("PP", "¶")            ; pilcrow / paragraph
-        compose_sequences.Add("dg", "†")            ; dagger
-        compose_sequences.Add("ddg", "‡")           ; double dagger
-        compose_sequences.Add("O*", "⎈")            ; helm
-        compose_sequences.Add("b.", "•")            ; bullet
+        compose_sequences.Add("dag", "†")            ; dagger
+        compose_sequences.Add("ddag", "‡")           ; double dagger
+        compose_sequences.Add("*O", "⎈")            ; helm
+        compose_sequences.Add("bul", "•")           ; bullet
         compose_sequences.Add("vv", "✓")            ; checkmark
         compose_sequences.Add("xx", "✗")            ; ballot x
         compose_sequences.Add("E=", "€")            ; euro
@@ -256,7 +304,7 @@ compose_init() {
         compose_sequences.Add("Ho", "⌘")            ; severdighet
         compose_sequences.Add("  ", "␣")            ; underbox
         ; math
-        compose_sequences.Add("oo", "°")            ; degrees
+        compose_sequences.Add("deg", "°")           ; degrees
         compose_sequences.Add("oC", "℃")            ; degrees Celcius
         compose_sequences.Add("oF", "℉")            ; degrees Fahrenheit
         compose_sequences.Add("88", "∞")            ; infinity
@@ -274,10 +322,10 @@ compose_init() {
         compose_sequences.Add("2v", "√")            ; square root
         compose_sequences.Add("3v", "∛")            ; third root
         compose_sequences.Add("4v", "∜")            ; fourth root
-        compose_sequences.Add("t(", "⌈")            ; left ceiling
-        compose_sequences.Add("t)", "⌉")            ; right ceiling
-        compose_sequences.Add("l(", "⌊")            ; left floor
-        compose_sequences.Add("l)", "⌋")            ; right floor
+        compose_sequences.Add("c(", "⌈")            ; left ceiling
+        compose_sequences.Add("c)", "⌉")            ; right ceiling
+        compose_sequences.Add("f(", "⌊")            ; left floor
+        compose_sequences.Add("f)", "⌋")            ; right floor
         compose_sequences.Add("!=", "≠")            ; not equal
         compose_sequences.Add("==", "≡")            ; identical
         compose_sequences.Add("~~", "≈")            ; approximately equal
@@ -290,17 +338,21 @@ compose_init() {
         compose_sequences.Add("!>=", "≱")           ; not greater than or equal
         compose_sequences.Add("<!=", "≨")           ; less than not equal
         compose_sequences.Add(">!=", "≩")           ; greater than not equal
-        compose_sequences.Add("<.<", "≪")           ; much less than
-        compose_sequences.Add(">.>", "≫")           ; much greater than
+        compose_sequences.Add("<.", "≪")            ; much less than
+        compose_sequences.Add(">.", "≫")            ; much greater than
         compose_sequences.Add("-<", "←")            ; left arrow
         compose_sequences.Add("->", "→")            ; right arrow
+        compose_sequences.Add("-^", "↑")            ; right arrow
+        compose_sequences.Add("-v", "↓")            ; right arrow
         compose_sequences.Add("<>", "↔")            ; left/right arrow
         compose_sequences.Add("=<", "⇐")            ; left double arrow
         compose_sequences.Add("=>", "⇒")            ; right double arrow
+        compose_sequences.Add("=^", "⇑")            ; right double arrow
+        compose_sequences.Add("=v", "⇓")            ; right double arrow
         compose_sequences.Add("m.", "·")            ; dot product
         compose_sequences.Add("mo", "∘")            ; ring operator
         compose_sequences.Add("not", "¬")           ; not
-        compose_sequences.Add("empt", "∅")          ; empty set
+        compose_sequences.Add("o/", "∅")            ; empty set
         compose_sequences.Add("cc", "∁")            ; complement
         compose_sequences.Add("fa", "∀")            ; for all
         compose_sequences.Add("ex", "∃")            ; exists
@@ -312,7 +364,8 @@ compose_init() {
         compose_sequences.Add("and", "∧")           ; and
         compose_sequences.Add("or", "∨")            ; or
         compose_sequences.Add("cap", "∩")           ; intersection
-        compose_sequences.Add("cup", "∪")           ; union
+        compose_sequences.Add("xU", "∩")            ; union
+        compose_sequences.Add("UU", "∪")            ; union
         compose_sequences.Add("((", "⊂")            ; subset
         compose_sequences.Add("))", "⊃")            ; superset
         compose_sequences.Add("!((", "⊄")           ; not subset
@@ -323,6 +376,25 @@ compose_init() {
         compose_sequences.Add("!)=", "⊉")           ; not superset or equal
         compose_sequences.Add("(!=", "⊊")           ; subset not equal
         compose_sequences.Add(")!=", "⊋")           ; superset not equal
+        compose_sequences.Add("[[", "⊏")            ; image of
+        compose_sequences.Add("]]", "⊐")            ; original of
+        compose_sequences.Add("[=", "⊑")            ; image of or equal
+        compose_sequences.Add("]=", "⊒")            ; original of or equal
+        compose_sequences.Add("![=", "⋢")           ; not image of or equal
+        compose_sequences.Add("!]=", "⋣")           ; not original of or equal
+        compose_sequences.Add("O-", "⊖")            ; circled minus
+        compose_sequences.Add("O+", "⊕")            ; circled plus
+        compose_sequences.Add("Ox", "⊗")            ; circled multiply
+        compose_sequences.Add("O.", "⊙")            ; circled dot
+        compose_sequences.Add("O/", "⊘")            ; circled slash
+        compose_sequences.Add("Oo", "⊚")            ; circled ring
+        compose_sequences.Add("O*", "⊛")            ; circled star
+        compose_sequences.Add("T<", "⊣")            ; circled star
+        compose_sequences.Add("T>", "⊢")            ; circled star
+        compose_sequences.Add("T^", "⊥")            ; circled star
+        compose_sequences.Add("Tv", "⊤")            ; circled star
+        compose_sequences.Add("oo", "∘")            ; ring operator
+
         compose_sequences.Add(".^", "∴")            ; therefore
         compose_sequences.Add(".v", "∵")            ; because
         compose_sequences.Add("qed", "∎")
@@ -375,14 +447,14 @@ compose_init() {
         compose_sequences.Add("gG", "Γ")
         compose_sequences.Add("gd", "δ")                ; delta
         compose_sequences.Add("gD", "Δ")
-        compose_sequences.Add("gep", "ε")               ; epsilon
-        compose_sequences.Add("gEp", "Ε")
+        compose_sequences.Add("ge", "ε")                ; epsilon
+        compose_sequences.Add("gE", "Ε")
         compose_sequences.Add("gz", "ζ")                ; zeta
         compose_sequences.Add("gZ", "Ζ")
-        compose_sequences.Add("get", "η")               ; eta
-        compose_sequences.Add("gEt", "Η")
-        compose_sequences.Add("gth", "θ")               ; theta
-        compose_sequences.Add("gTh", "Θ")
+        compose_sequences.Add("gh", "η")                ; eta
+        compose_sequences.Add("gH", "Η")
+        compose_sequences.Add("gq", "θ")                ; theta
+        compose_sequences.Add("gQ", "Θ")
         compose_sequences.Add("gi", "ι")                ; iota
         compose_sequences.Add("gI", "Ι")
         compose_sequences.Add("gk", "κ")                ; kappa
@@ -397,22 +469,22 @@ compose_init() {
         compose_sequences.Add("gX", "Ξ")
         compose_sequences.Add("go", "ο")                ; omicron
         compose_sequences.Add("gO", "Ο")
-        compose_sequences.Add("gpi", "π")               ; pi
-        compose_sequences.Add("gPi", "Π")
+        compose_sequences.Add("gp", "π")                ; pi
+        compose_sequences.Add("gP", "Π")
         compose_sequences.Add("gr", "ρ")                ; rho
         compose_sequences.Add("gR", "Ρ")
         compose_sequences.Add("gs", "σ")                ; sigma
         compose_sequences.Add("gS", "Σ")
-        compose_sequences.Add("gta", "τ")               ; tau
-        compose_sequences.Add("gTa", "Τ")
-        compose_sequences.Add("gy", "υ")                ; upsilon
-        compose_sequences.Add("gY", "Υ")
+        compose_sequences.Add("gt", "τ")                ; tau
+        compose_sequences.Add("gT", "Τ")
+        compose_sequences.Add("gu", "υ")                ; upsilon
+        compose_sequences.Add("gU", "Υ")
         compose_sequences.Add("gf", "φ")                ; phi
         compose_sequences.Add("gF", "Φ")
         compose_sequences.Add("gc", "χ")                ; chi
         compose_sequences.Add("gC", "Χ")
-        compose_sequences.Add("gps", "ψ")               ; psi
-        compose_sequences.Add("gPs", "Ψ")
+        compose_sequences.Add("gy", "ψ")                ; psi
+        compose_sequences.Add("gY", "Ψ")
         compose_sequences.Add("gw", "ω")                ; omega
         compose_sequences.Add("gW", "Ω")
         ; hebrew
@@ -421,17 +493,29 @@ compose_init() {
         compose_sequences.Add("hg", "ℷ")                ; gimel
         compose_sequences.Add("hd", "ℸ")                ; dalet
         ; emoji / other symbols
-        compose_sequences.Add("gear", "⚙")              ; gear wheel
-        compose_sequences.Add("warn", "⚠")              ; warning sign
+        compose_sequences.Add("cog", "⚙")              ; gear wheel
+        compose_sequences.Add("war", "⚠")              ; warning sign
         compose_sequences.Add("el", "⚡")               ; high voltage
-        compose_sequences.Add("nucl", "☢")              ; nuclear warning
+        compose_sequences.Add("nuc", "☢")              ; nuclear warning
         compose_sequences.Add("bio", "☣")               ; biohazard warning
         compose_sequences.Add("net", "🖧")              ; computer networkk
-        compose_sequences.Add("cycl", "♲")              ; recycling
-        compose_sequences.Add("male", "♂")              ; male symbol
-        compose_sequences.Add("fema", "♀")              ; female symbol
+        compose_sequences.Add("cyc", "♲")              ; recycling
+        compose_sequences.Add("mal", "♂")              ; male symbol
+        compose_sequences.Add("fem", "♀")              ; female symbol
 
-        ;;;;;;;;;;;;;;;;;
-        global compose_found := False
+        compose_sequences.Add("lorem", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+        lorem5 =
+(
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam vulputate volutpat sem, et varius nisl rutrum ac. Nam elementum maximus feugiat. Vestibulum vulputate sodales pretium. Etiam a venenatis erat. Aliquam non sagittis sem. Morbi aliquam gravida neque eget mattis. Donec efficitur augue tellus, faucibus aliquam nisi suscipit sit amet. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Fusce ut lacus eleifend, vestibulum sem quis, auctor odio.
+
+Proin blandit purus a erat placerat, vel venenatis lectus feugiat. Cras nec diam gravida, imperdiet libero ut, mattis velit. Vivamus cursus, turpis eget tincidunt tristique, augue arcu condimentum purus, sit amet luctus elit libero quis lorem. Proin pharetra orci in libero accumsan, eleifend mattis justo tempor. Morbi nec rutrum neque. Maecenas lobortis lectus ac augue hendrerit, id semper dui posuere. Vivamus at suscipit nulla.
+
+Vestibulum imperdiet laoreet erat vitae faucibus. Sed et felis sed massa laoreet tincidunt. Quisque commodo ante et sapien sagittis pulvinar. Aenean tempor auctor nisl, sed dignissim libero facilisis et. Curabitur vitae nibh efficitur arcu accumsan lacinia nec a risus. Praesent eleifend tempus ex, vel vestibulum sem aliquet in. Ut fringilla orci eget molestie elementum. Quisque mi ex, semper ut porta at, varius in lacus. Quisque sed quam faucibus, pharetra diam in, pharetra nulla. Fusce in euismod diam. Ut enim odio, posuere eu turpis at, suscipit bibendum elit.
+
+Proin tincidunt imperdiet justo eu consectetur. Cras tempor vel ipsum quis interdum. Nulla tincidunt nibh in lacus euismod, id vestibulum dolor tristique. Ut ipsum orci, rutrum vel porta sed, malesuada id turpis. Morbi eu ullamcorper nibh. Maecenas lectus justo, varius vel ipsum vitae, ultricies commodo neque. Vestibulum tempor nibh vel venenatis maximus. Proin ultrices mauris tincidunt efficitur lacinia. Nullam congue ultricies purus sit amet pretium. Pellentesque sodales bibendum magna, a cursus arcu dignissim ac. Maecenas elementum viverra mi, sed ultrices libero facilisis et. Praesent at posuere nibh. Integer vehicula id nisl aliquam vulputate. Maecenas euismod, leo eget gravida finibus, nulla mauris fringilla neque, ut pulvinar nisl quam ullamcorper lectus. Donec dapibus metus nisi.
+
+Aliquam at magna diam. Nam aliquam euismod ante a interdum. Cras semper erat ut nulla fermentum ullamcorper. Nunc rutrum lorem feugiat urna pharetra rhoncus. Praesent luctus tellus ut libero cursus volutpat. Aenean lobortis urna in lacinia faucibus. Nunc elementum, velit vitae tristique aliquam, dolor purus porta nibh, nec accumsan nisl augue sed metus. Aliquam sit amet sodales urna, a dignissim nisi. Aenean ut placerat felis, ac maximus turpis. Integer sagittis scelerisque turpis, ac vulputate eros interdum ac.
+)
+        compose_sequences.Add("5lorem", lorem5)
     }
 }

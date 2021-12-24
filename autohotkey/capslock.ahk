@@ -9,6 +9,14 @@ return
 
 ; Also use Caps Lock as a modifier
 #If GetKeyState("CapsLock", "P")
+    Space::
+        compose_stop()
+        if (GetKeyState("CapsLock", "T")) {
+            SetCapsLockState, off
+        } else {
+            SetCapsLockState, on
+        }
+    return
     a::
         if (GetKeyState("CapsLock", "T")) {
             SetCapsLockState, off
@@ -20,55 +28,55 @@ return
         compose_stop()
         SendEvent, {Ctrl down}{CtrlBreak}{Ctrl up}
     return
+    d::
+        compose_stop()
+        SendEvent, {Del}
+    return
     e::
         compose_stop()
         SendEvent, {Escape}
     return
-    Space::
+    h::
         compose_stop()
-        arrow_mode("toggle")
+        SendEvent, {Backspace}
     return
+    ; Space::
+    ;     compose_stop()
+    ;     arrow_mode("toggle")
+    ; return
     s::
         compose_stop()
         SendEvent, {ScrollLock}
     return
-    i::
-        compose_stop()
-        SendEvent, {Insert}
-    return
+    ; i::
+    ;     compose_stop()
+    ;     SendEvent, {Insert}
+    ; return
     '::
-        compose_stop()
-        SendInput, æ
-    return
     "::
         compose_stop()
-        SendInput, Æ
+        SendInput % correct_case_of("æ")
     return
     `;::
-        compose_stop()
-        SendInput, ø
-    return
     :::
         compose_stop()
-        SendInput, Ø
+        SendInput % correct_case_of("ø")
     return
     [::
-        compose_stop()
-        SendInput, å
-    return
     {::
         compose_stop()
-        SendInput, Å
-    return
-    *h::
-        compose_stop()
-        SendInput, {Blind}{Left}
+        SendInput % correct_case_of("å")
     return
     *j::
         compose_stop()
-        SendInput, {Blind}{Down}
+        SendInput, {Blind}{Left}
     return
     *k::
+    *,::
+        compose_stop()
+        SendInput, {Blind}{Down}
+    return
+    *i::
         compose_stop()
         SendInput, {Blind}{Up}
     return

@@ -16,12 +16,12 @@ if has('viminfo')
 endif
 
 if has('nvim')
-    if has('win32') && executable(expand('~/venv/nvim/Scripts/python.exe', 1))
-        let g:python3_host_prog = '~/venv/nvim/Scripts/python.exe'
-    elseif has('unix') && executable('~/venv/nvim/bin/python')
-        let g:python3_host_prog = '~/venv/nvim/bin/python'
+    if has('win32') && executable(expand('~/venvs/nvim/Scripts/python.exe', 1))
+        let g:python3_host_prog = '~/venvs/nvim/Scripts/python.exe'
+    elseif has('unix') && executable('~/venvs/nvim/bin/python')
+        let g:python3_host_prog = '~/venvs/nvim/bin/python'
     endif
-    command -nargs=0 ServerName call ClipboardSend(v:servername) | echo v:servername
+    command! -nargs=0 ServerName call ClipboardSend(v:servername) | echo v:servername
 endif
 
 if has('nvim') && has('win32')
@@ -35,13 +35,13 @@ endif
 "}}}
 
 " {{{ options
+language C
 set langmenu=en_US.UTF-8
-language en
-" "LC_COLLATE=nb_NO;LC_CTYPE=nb_NO;LC_MONETARY=nb_NO;LC_NUMERIC=C;LC_TIME=nb_NO"
-set noswapfile autoread
-
 set encoding=utf-8 fileformats=unix,dos
 setglobal fileencoding=utf-8
+
+set noswapfile autoread
+
 set timeout ttimeout timeoutlen=1500 ttimeoutlen=10 updatetime=300
 
 set hidden visualbell
@@ -153,6 +153,12 @@ function s:ctrl_l()
     endif
     WindowIdentify
     return ""
+endfunction
+
+nnoremap g<c-a> :call <sid>showpos()<cr>
+function s:showpos()
+    let [bufnum, lnum, colnum, offset, curswant] = getcurpos()
+    echo "Line: " . lnum . ", Column: " . colnum
 endfunction
 
 cabbrev <expr> %% expand('%:p:h')
@@ -438,52 +444,65 @@ endfunction
 
 " {{{ osc52
 
-let s:b64 = [
-    \ 'A','B','C','D','E','F','G','H','I','J','K','L','M',
-    \ 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-    \ 'a','b','c','d','e','f','g','h','i','j','k','l','m',
-    \ 'n','o','p','q','r','s','t','u','v','w','x','y','z',
-    \ '0','1','2','3','4','5','6','7','8','9','+', '*' ]
+" let s:b64 = [
+"     \ 'A','B','C','D','E','F','G','H','I','J','K','L','M',
+"     \ 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+"     \ 'a','b','c','d','e','f','g','h','i','j','k','l','m',
+"     \ 'n','o','p','q','r','s','t','u','v','w','x','y','z',
+"     \ '0','1','2','3','4','5','6','7','8','9','+', '*' ]
 
-function! Base64Enc(text)
-    let i = 0
-    let n = len(a:text)
-    let result = ''
-    while i < n
-        let i1 = char2nr(a:text[i])
-        let i2 = (i+1 < n ? char2nr(a:text[i+1]) : 0)
-        let i3 = (i+2 < n ? char2nr(a:text[i+2]) : 0)
-        let o1 = i1 / 4
-        let o2 = or(and(i1, 3) * 16, i2 / 16)
-        let o3 = or(and(i2, 15) * 4, i3 / 64)
-        let o4 = and(i3, 63)
-        let result = result . s:b64[o1] . s:b64[o2] .
-            \ (i+1 < n ? s:b64[o3] : '=') .
-            \ (i+2 < n ? s:b64[o4] : '=')
-        let i += 3
-    endwhile
-    return result
-endfunction
+" function! Base64Enc(text)
+"     let i = 0
+"     let n = len(a:text)
+"     let result = ''
+"     while i < n
+"         let i1 = char2nr(a:text[i])
+"         let i2 = (i+1 < n ? char2nr(a:text[i+1]) : 0)
+"         let i3 = (i+2 < n ? char2nr(a:text[i+2]) : 0)
+"         let o1 = i1 / 4
+"         let o2 = or(and(i1, 3) * 16, i2 / 16)
+"         let o3 = or(and(i2, 15) * 4, i3 / 64)
+"         let o4 = and(i3, 63)
+"         let result = result . s:b64[o1] . s:b64[o2] .
+"             \ (i+1 < n ? s:b64[o3] : '=') .
+"             \ (i+2 < n ? s:b64[o4] : '=')
+"         let i += 3
+"     endwhile
+"     return result
+" endfunction
 
-function! Osc52Send(text) range
-    silent execute '!echo ' .
-        \ shellescape("\e]52;c;" . Base64Enc(a:text) . "\x07")
-    redraw!
-endfunction
+" function! Osc52Send(text)
+"     silent execute '!echo ' .
+"         \ shellescape("\e]52;c;" . Base64Enc(a:text) . "\x07")
+"     redraw!
+" endfunction
+set pastetoggle=<f2>
 
-function! WinClipExeSend(text) range
-    call system('clip.exe', a:text)
-endfunction
+if !has('nvim')
+    PkgInstall ConradIrwin/vim-bracketed-paste
+endif
+
+PkgInstall ojroques/vim-oscyank
 
 function! ClipboardSend(text)
-    if g:clipboard_send_method == "clip.exe"
-        call WinClipExeSend(a:text)
+    if $DISPLAY != "" && executable('xclip')
+        call system('xclip -selection clipboard -in', a:text)
+    elseif $DISPLAY != "" && executable('xsel')
+        call system('xsel --clipboard --input', a:text)
+    elseif has('win32') && executable('clip.exe')
+        call system('clip.exe', a:text)
+    elseif has('win32') && executable('win32yank.exe')
+        call system('win32yank.exe -i', a:text)
+    elseif $WAYLAND_DISPLAY != "" && executable('wl-copy')
+        call system('wl-copy', a:text)
+    elseif $SSH_CONNECTION != ""
+        call OSCYankString(a:text)
     else
-        call Osc52Send(a:text)
+        echoerr "Unknown system: don't know how to use clipboard"
     endif
 endfunction
 
-function! ClipboardSend_Op(type, op) abort range
+function! ClipboardSend_Op(type, op)
     let oldA = getreginfo('a')
     if a:type ==# 'char'
         normal! `[v`]"ay
@@ -515,8 +534,6 @@ nnoremap <space>yy m[m]:call ClipboardYank('line')<cr>
 nnoremap <space>Y :set operatorfunc=ClipboardYank<cr>g@$
 xnoremap <space>y :call ClipboardYank(visualmode())<cr>
 xnoremap <space>Y :call ClipboardYank('V')<cr>
-
-let g:clipboard_send_method = "clip.exe"
 
 " }}}
 
@@ -854,6 +871,7 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
             \ 'coc-snippets',
             \ 'coc-rls',
             \ 'coc-powershell',
+            \ 'coc-db',
             \ ]
 
             " disabled for now
@@ -1284,7 +1302,6 @@ else
 endif
 PkgInstall AndrewRadev/tagalong.vim
 PkgInstall honza/vim-snippets
-" PkgInstall jototland/filterops.vim
 PkgInstall jototland/trivial-text-objects.vim
 PkgInstall junegunn/goyo.vim
 PkgInstall junegunn/gv.vim
@@ -1294,7 +1311,12 @@ PkgInstall sgur/vim-editorconfig
 PkgInstall tommcdo/vim-lion
 PkgInstall tommcdo/vim-exchange
 PkgInstall tpope/vim-commentary
+
+" {{{ Dadbod
+" For sql server, also install `sqlcmd`
 PkgInstall tpope/vim-dadbod
+PkgInstall kristijanhusak/vim-dadbod-ui
+let g:sf3 = 'sqlserver://sf3/kcsdbs'
 PkgInstall tpope/vim-eunuch
 PkgInstall tpope/vim-repeat
 PkgInstall tpope/vim-fugitive

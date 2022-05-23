@@ -7,6 +7,23 @@ CapsLock::
     compose()
 return
 
+; ; Change to scandinavian mapping unless other modifiers are pressed
+; #If Not GetKeyState("CapsLock", "P")
+; '::
+; "::
+;     compose_stop()
+;     SendInput % correct_case_of("æ")
+; return
+; `;::
+; :::
+;     SendInput % correct_case_of("ø")
+; return
+; [::
+; {::
+;     SendInput % correct_case_of("å")
+; return
+; #If
+
 ; Also use Caps Lock as a modifier
 #If GetKeyState("CapsLock", "P")
     Space::
@@ -17,41 +34,40 @@ return
             SetCapsLockState, on
         }
     return
-    a::
-        if (GetKeyState("CapsLock", "T")) {
-            SetCapsLockState, off
-        } else {
-            SetCapsLockState, on
-        }
+    *a::
+        compose_stop()
+        SendInput, {Blind}{Ctrl down}
+    return
+    ; *s::return
+    *a up::
+        compose_stop()
+        SendInput, {Blind}{Ctrl up}
     return
     c::
         compose_stop()
-        SendEvent, {Ctrl down}{CtrlBreak}{Ctrl up}
+        SendInput, {Ctrl down}{CtrlBreak}{Ctrl up}
     return
-    d::
+    Backspace::
         compose_stop()
-        SendEvent, {Del}
+        SendInput, {Del}
     return
     e::
         compose_stop()
         SendEvent, {Escape}
     return
-    h::
-        compose_stop()
-        SendEvent, {Backspace}
-    return
-    ; Space::
+    ; h::
     ;     compose_stop()
-    ;     arrow_mode("toggle")
+    ;     SendEvent, {Backspace}
     ; return
-    s::
-        compose_stop()
-        SendEvent, {ScrollLock}
-    return
+    ; s::
+    ;     compose_stop()
+    ;     SendEvent, {ScrollLock}
+    ; return
     ; i::
     ;     compose_stop()
     ;     SendEvent, {Insert}
     ; return
+
     '::
     "::
         compose_stop()
@@ -67,16 +83,16 @@ return
         compose_stop()
         SendInput % correct_case_of("å")
     return
-    *j::
+    *h::
         compose_stop()
         SendInput, {Blind}{Left}
     return
-    *k::
-    *,::
+    *j::
+    ; *,::
         compose_stop()
         SendInput, {Blind}{Down}
     return
-    *i::
+    *k::
         compose_stop()
         SendInput, {Blind}{Up}
     return
@@ -100,7 +116,45 @@ return
         compose_stop()
         SendInput, {Blind}{PgDn}
     return
+    *y::
+        compose_stop()
+        SendInput, {Blind}{WheelLeft}
+    return
+    *p::
+        compose_stop()
+        SendInput, {Blind}{WheelRight}
+    return
 #If
+
+vim() {
+    local USERPROFILE
+    EnvGet USERPROFILE, USERPROFILE
+    Run, gvim.bat, %USERPROFILE%
+}
+
+unicodehex() {
+    global unicodehex_input_hook := ""
+
+    if (unicodehex_input_hook == "") {
+        unicodehex_input_hook := InputHook("C0L8M0", "{Enter}")
+        unicodehex_input_hook.KeyOpt("{All}", "E")
+        unicodehex_input_hook.KeyOpt("abcdefABCDEF0123456789", "-E")
+    }
+    unicodehex_input_hook.start()
+    endreason := unicodehex_input_hook.wait()
+    if (endreason == "Max") {
+        str := unicodehex_input_hook.Input
+        SendInput, {U+%str%}
+    } else if (endreason == "EndKey") {
+        if (unicodehex_input_hook.EndKey == "Enter") {
+            str := unicodehex_input_hook.Input
+            SendInput, {U+%str%}
+        } else {
+            str := unicodehex_input_hook.Input . unicodehex_input_hook.EndKey
+            SendInput, %str%
+        }
+    }
+}
 
 compose() {
     global compose_sequences
@@ -148,12 +202,6 @@ compose_key_down(ih, vk, sc) {
     }
 }
 
-vim() {
-    local USERPROFILE
-    EnvGet USERPROFILE, USERPROFILE
-    Run, gvim.bat, %USERPROFILE%
-}
-
 compose_init() {
     static init := False
     if (!init) {
@@ -162,6 +210,9 @@ compose_init() {
         compose_input_hook.KeyOpt("{All}", "N")
         compose_input_hook.OnKeyDown := Func("compose_key_down")
         global compose_sequences := ComObjCreate("Scripting.Dictionary")
+        ; Unicode
+        compose_sequences.Add("u", Func("unicodehex"))
+
         ; Norway: æøå
         compose_sequences.Add("ae", "æ")
         compose_sequences.Add("/o", "ø")
@@ -311,6 +362,8 @@ compose_init() {
         compose_sequences.Add("TM", "™")            ; trademark
         compose_sequences.Add("Ho", "⌘")            ; severdighet
         compose_sequences.Add("  ", "␣")            ; underbox
+        compose_sequences.Add(":.", "⋮")            ; vertical ellipsis
+        compose_sequences.Add("=-", "☰")            ; trigram for heaven / hamburger menu
         ; math
         compose_sequences.Add("deg", "°")           ; degrees
         compose_sequences.Add("oC", "℃")            ; degrees Celcius
@@ -502,11 +555,12 @@ compose_init() {
         compose_sequences.Add("hd", "ℸ")                ; dalet
         ; emoji / other symbols
         compose_sequences.Add("cog", "⚙")              ; gear wheel
+        compose_sequences.Add("*o.", "⚙")               ; gear wheel
         compose_sequences.Add("war", "⚠")              ; warning sign
-        compose_sequences.Add("el", "⚡")               ; high voltage
+        compose_sequences.Add("el", "⚡")              ; high voltage
         compose_sequences.Add("nuc", "☢")              ; nuclear warning
-        compose_sequences.Add("bio", "☣")               ; biohazard warning
-        compose_sequences.Add("net", "🖧")              ; computer networkk
+        compose_sequences.Add("bio", "☣")              ; biohazard warning
+        compose_sequences.Add("net", "🖧")             ; computer network
         compose_sequences.Add("cyc", "♲")              ; recycling
         compose_sequences.Add("mal", "♂")              ; male symbol
         compose_sequences.Add("fem", "♀")              ; female symbol

@@ -1,0 +1,33 @@
+# Editor droppings
+*~
+\#*\#
+.netrwhist
+tags
+[._]*un.~
+[._]*.sw[g-p]
+
+# Python
+__pycache__
+*.py[cod]
+$py.class
+
+# R/Rstudio
+.Rproj.user/
+*.utf8.md
+*.utf8.knit
+*_cache/
+/cache/
+.Rdata
+.Ruserdata
+
+# C
+*.o
+
+# i18n
+*.mo
+*.pot
+
+# other
+*.log
+*.bak
+*.tmp

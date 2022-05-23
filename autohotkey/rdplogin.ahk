@@ -52,7 +52,7 @@ credentials_send_pincode_for_user(n) {
     global secret_pincode, secret_pincode_set
     if WinActive("Windows Security") {
         WinGetActiveStats title, width, height, x, y
-        if ((height == 349) || (height == 522)) {  ; scale 100%, 150%
+        if ((height >= 347 and height <= 351) || (height >= 520 and height <= 524)) {  ; scale 100%, 150%
             MouseClick, left, 100, 130
             SendInput, {Tab 2}{Space}
             Sleep, 100

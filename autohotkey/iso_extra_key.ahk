@@ -17,6 +17,7 @@ return
 *o::SendInput, {NumPad9}
 *Space::SendInput, {Numpad0}
 s::ask_resize_window()
+z::move_resize_window_absolute( , , , 1920, 1048)
 v::paste_text()
 p::send_play_pause()
 [::Volume_Down
@@ -108,9 +109,10 @@ ask_move_window() {
 }
 
 move_resize_window_absolute(window:="", new_x:="", new_y:="", new_w:="", new_h:="") {
-    local x, y, w, h, mon
+    local x, y, w, h, mon, win
+    ; win := window
     if (window == "") {
-        WinGet, window, ID, A)
+        WinGet, window, ID, A
     }
     WinGetPos, x, y, w, h, ahk_id %window%
     if (new_w == "") {

@@ -17,20 +17,32 @@ endif
 
 if has('nvim')
     if has('win32') && executable(expand('~/venvs/nvim/Scripts/python.exe', 1))
-        let g:python3_host_prog = '~/venvs/nvim/Scripts/python.exe'
-    elseif has('unix') && executable('~/venvs/nvim/bin/python')
-        let g:python3_host_prog = '~/venvs/nvim/bin/python'
+        let g:python3_host_prog = expand('~/venvs/nvim/Scripts/python.exe')
+    elseif has('unix') && executable(expand('~/venvs/nvim/bin/python'))
+        let g:python3_host_prog = expand('~/venvs/nvim/bin/python')
     endif
+
+    if has('linux') && $WSL_DISTRO_NAME != "" && !executable('win32yank.exe')
+        if executable('wslpath') && executable('wslvar')
+            let userprofile = trim(system('wslpath $(wslvar USERPROFILE)'))
+            let nvim_dir = userprofile . '/scoop/apps/neovim/current/bin'
+            let win32yank = nvim_dir . '/win32yank.exe'
+            if executable(win32yank)
+                let $PATH .= ':' . nvim_dir
+            endif
+        endif
+    endif
+
     command! -nargs=0 ServerName call ClipboardSend(v:servername) | echo v:servername
 endif
 
-if has('nvim') && has('win32')
-    let &shell = has('win32') ? 'powershell' : 'pwsh'
-    let &shellcmdflag = '-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;'
-    let &shellredir = '2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode'
-    let &shellpipe = '2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode'
-    set shellquote= shellxquote=
-endif
+" if has('nvim') && has('win32')
+"     let &shell = has('win32') ? 'powershell' : 'pwsh'
+"     let &shellcmdflag = '-NoLogo -NoProfile -ExecutionPolicy RemoteSigned[Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;'
+"     let &shellredir = '2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode'
+"     let &shellpipe = '2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode'
+"     set shellquote= shellxquote=
+" endif
 
 "}}}
 
@@ -46,8 +58,19 @@ set timeout ttimeout timeoutlen=1500 ttimeoutlen=10 updatetime=300
 
 set hidden visualbell
 set backspace=indent,eol,start virtualedit=block,insert
-set wildmode=list:longest wildignore=*.o,*~
-set wildignore=NTUSER.DAT*,*.o,*.class,*.pyc,__pycache__/,.git/,*.png,*.jpg,*.jpeg,*.gif,*.exe
+set mouse=a mousemodel=extend
+
+set wildmode=list:longest
+
+set wildignore=
+set wildignore+=NTUSER.DAT*,*.exe
+set wildignore+=*~,#*#
+set wildignore+=*.o,*.a,*.so
+set wildignore+=*/.git/*
+set wildignore+=*.pyc,*/__pycache__/*\,*/*.egg-info/*
+set wildignore+=*.class
+set wildignore+=*.png,*.jpg,*.jpeg,*.gif
+
 set complete=.,w,b,u,t,i,d,kspell
 set completeopt=menuone,longest,preview,noselect
 
@@ -68,6 +91,13 @@ set number nofoldenable
 try | set signcolumn=number "has("patch-8.1.1564")
 catch | set signcolumn=yes
 endtry
+
+execute 'set breakat=\ '
+set showbreak=\|>
+set breakindentopt=shift:4,sbr
+set breakindent
+set linebreak
+set wrap
 " let g:kite_auto_complete=0
 " }}}
 
@@ -88,6 +118,12 @@ function! s:mapcmd(bang, modes, key, ...)
     endfor
 endfunction
 
+function! Experimental()
+    nnoremap h i
+    nnoremap j h
+    nnoremap k j
+    nnoremap i k
+endfunction
 nnoremap æ :<c-u>echom "Du har norsk tastaturoppsett!"<cr>
 nnoremap Æ :<c-u>echom "Du har norsk tastaturoppsett!"<cr>
 nnoremap ø :<c-u>echom "Du har norsk tastaturoppsett!"<cr>
@@ -98,10 +134,16 @@ nnoremap U :<c-u>echom "Slå av CAPS LOCK!"<cr>
 
 nnoremap ; :
 vnoremap ; :
+nnoremap : :<c-f>a
+vnoremap : :<c-f>a
+
 nnoremap s <c-w>
 
-inoremap <c-g><cr> <cr><c-o>O<c-f>
-" the opposite of <c-g><cr> is usually va}J
+" insert new line and indent next line
+" (the opposite of <c-g><cr> is usually va}J)
+inoremap <c-g><cr> <c-g>u<cr><c-o>O<c-f>
+" convert current word to dunder
+inoremap <c-g>_ <c-g>u<c-o>b__<c-o>e<c-o>a__
 
 vnoremap > >gv
 vnoremap < <gv
@@ -138,7 +180,8 @@ inoremap <expr> <c-p> pumvisible() ? '<up>' : '<c-p>'
 inoremap <expr> <c-j> pumvisible() ? '<down>' : ''
 inoremap <expr> <c-k> pumvisible() ? '<up>' : ''
 inoremap <expr> <tab> pumvisible() ? '<c-y>' : '<tab>'
-inoremap <expr> <cr> pumvisible() ? '<c-y>' : '<c-g>u<cr>'
+" inoremap <expr> <cr> pumvisible() ? '<c-y>' : '<c-g>u<cr>'
+inoremap <cr> <c-g>u<cr>
 
 inoremap <c-^> <esc><c-^>
 
@@ -148,6 +191,8 @@ nnoremap <silent> <c-l> <c-l>:call <sid>ctrl_l()\|nohlsearch<cr>
 inoremap <expr> <c-l> <sid>ctrl_l()
 function s:ctrl_l()
     silent! call coc#float#close_all()
+    silent! call coc#_hide()
+    " silent! call coc#float#check_related()
     if !has('nvim')
         call popup_clear()
     endif
@@ -485,7 +530,10 @@ endif
 PkgInstall ojroques/vim-oscyank
 
 function! ClipboardSend(text)
-    if $DISPLAY != "" && executable('xclip')
+    if $WSL_DISTRO_NAME != ""
+        call system('clip.exe', a:text)
+        "opposite: powershell.exe -command "Get-Clipboard"x
+    elseif $DISPLAY != "" && executable('xclip')
         call system('xclip -selection clipboard -in', a:text)
     elseif $DISPLAY != "" && executable('xsel')
         call system('xsel --clipboard --input', a:text)
@@ -534,7 +582,20 @@ nnoremap <space>yy m[m]:call ClipboardYank('line')<cr>
 nnoremap <space>Y :set operatorfunc=ClipboardYank<cr>g@$
 xnoremap <space>y :call ClipboardYank(visualmode())<cr>
 xnoremap <space>Y :call ClipboardYank('V')<cr>
+nnoremap <space>p "+p
+nnoremap <space>P "+P
 
+if has('nvim') && exists('g:GuiLoaded')
+    inoremap <c-s-v> <c-o>"+p
+endif
+" }}}
+
+" {{{ netrw
+let g:netrw_banner = 0
+if has('win32')
+    let g:netrw_scp_cmd = 'scp'
+endif
+let g:netrw_sort_sequence = '[\/]$,*'
 " }}}
 
 " {{{ MatchTagAlways
@@ -557,9 +618,8 @@ endif
 " {{{ floaterm
 if has('nvim') || (exists(':terminal') && exists('*popup_create'))
     PkgInstall voldikss/vim-floaterm
-    nnoremap <silent> <F7> :FloatermNew --width=0.9 --height=0.9<CR>
-    nnoremap <silent> <s-f7> :FloatermNew --wintype=split --height=0.5<cr>
-    tnoremap <silent> <F7> <C-\><C-n>:FloatermNew<CR>
+    let g:floaterm_wintype='split'
+    nnoremap <silent> <f7> :FloatermNew<cr>
     nnoremap <silent> <F8> :FloatermPrev<CR>
     tnoremap <silent> <F8> <C-\><C-n>:FloatermPrev<CR>
     nnoremap <silent> <F9> :FloatermNext<CR>
@@ -568,6 +628,7 @@ if has('nvim') || (exists(':terminal') && exists('*popup_create'))
     tnoremap <silent> <F12> <C-\><C-n>:FloatermToggle<CR>
     nnoremap <space>s :FloatermSend<cr>
     xnoremap <space>s :FloatermSend<cr>
+
     " FIXME: when using unix text files (LF) FloatermSend won't work on windows (CRLF)
     " command! -nargs=? -range   -bang -complete=customlist,floaterm#cmdline#complete_names2
     "     \ FloatermSend2 call floaterm#send(<bang>0, visualmode(), <range>, <line1>, <line2>, <q-args>)
@@ -581,25 +642,33 @@ endif
 " (Always) highlight whitespace at end of line
 highlight EOLWhiteSpace ctermbg=red guibg=red
 let w:eolwhitespacematch = matchadd('EOLWhiteSpace', '\s\+\%#\@<!$')
+let g:eolwhitespacematch_omit_ft = ['dbout']
+
+function! s:eolwhitespacematch_update_win(activate)
+    if &buftype ==# ''
+        if index(g:eolwhitespacematch_omit_ft, &filetype) ==# -1
+            if exists('w:eolwhitespacematch') && !a:activate
+                call matchdelete(w:eolwhitespacematch)
+                unlet w:eolwhitespacematch
+            elseif !exists('w:eolwhitespacematch') && a:activate
+                let w:eolwhitespacematch = matchadd('EOLWhitespace', '\s\+$', 10)
+            endif
+        endif
+    endif
+endfunction
 
 augroup EOLWhitespace
     autocmd!
     autocmd Colorscheme *
         \ highlight EOLWhiteSpace ctermbg=red guibg=red
     autocmd WinNew *
-        \ if &buftype == '' |
-        \ let w:eolwhitespacematch =  matchadd('EOLWhiteSpace', '\s\+$', 10) |
-        \ endif
+        \ call s:eolwhitespacematch_update_win(1)
+    autocmd FileType *
+        \ call s:eolwhitespacematch_update_win(1)
     autocmd InsertEnter *
-        \ if &buftype == '' |
-        \ silent! call matchdelete(w:eolwhitespacematch) |
-        \ silent! call matchadd('EOLWhiteSpace', '\s\+\%#\@<!$', 10, w:eolwhitespacematch) |
-        \ endif
+        \ call s:eolwhitespacematch_update_win(0)
     autocmd InsertLeave *
-        \ if &buftype == '' |
-        \ silent! call matchdelete(w:eolwhitespacematch) |
-        \ silent! call matchadd('EOLWhiteSpace', '\s\+$', 10, w:eolwhitespacematch) |
-        \ endif
+        \ call s:eolwhitespacematch_update_win(1)
 augroup END
 
 " command Trim: trim whitespace at end of line
@@ -658,11 +727,12 @@ nnoremap qj :<c-u>call SwapWin('j')<cr>
 nnoremap qk :<c-u>call SwapWin('k')<cr>
 nnoremap ql :<c-u>call SwapWin('l')<cr>
 
+command! -count=1 -bar Focus call Focus(<count>, 'left')
 command! -count=1 -bar FocusR call Focus(<count>, 'right')
 command! -nargs=0 -bar Zoom call Zoom()
 
 function! Focus(ncolumns, where)
-    if winnr('$') ==! 1
+    if winnr('$') ==# 1
         return
     elseif a:where ==# 'left'
         let splitcmd = 'topleft vsplit'
@@ -732,7 +802,9 @@ function! Grid(n_outer, inner_direction)
     else
         return
     endif
-    call PopupClear()
+    if !has('nvim')
+        call PopupClear()
+    endif
     let n = winnr('$')
     let winlist = []
     let buf = bufnr()
@@ -817,7 +889,7 @@ endfunction
 
 " {{{ UltiSnips
 PkgInstall idbrii/vim-endoscope
-imap <f1> <plug>(endoscope-close-pair)
+imap <c-g><space> <plug>(endoscope-close-pair)
 
 if has('python3')
     PkgInstall SirVer/UltiSnips
@@ -826,7 +898,8 @@ if has('python3')
         let g:UltiSnipsJumpForwardTrigger="<c-j>"
         let g:UltiSnipsJumpBackwardTrigger="<c-k>"
         " let g:UltiSnipsSnippetDirectories=['~/us', 'UltiSnips']
-        let g:UltiSnipsSnippetDirectories=['~/us']
+        " let g:UltiSnipsSnippetDirectories=['~/us']
+        let g:UltiSnipsSnippetDirectories=['~/Onedrive/dotfiles/UltiSnips']
 
         " If you want :UltiSnipsEdit to split your window.
         " let g:UltiSnipsEditSplit="vertical"
@@ -861,6 +934,7 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
             \ }
 
         let g:coc_global_extensions = [
+            \ 'coc-explorer',
             \ 'coc-tsserver',
             \ 'coc-json',
             \ 'coc-html',
@@ -868,17 +942,21 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
             \ 'coc-emmet',
             \ 'coc-pyright',
             \ 'coc-r-lsp',
+            \ 'coc-omnisharp',
+            \ 'coc-vimlsp',
             \ 'coc-snippets',
             \ 'coc-rls',
             \ 'coc-powershell',
             \ 'coc-db',
+            \ 'coc-julia',
+            \ 'coc-bootstrap-classname'
             \ ]
 
             " disabled for now
-            " \ 'coc-vimlsp',
             " \ 'coc-kite',
             "\ 'coc-pairs'
 
+        nnoremap <silent> <space>e :<c-u>CocCommand explorer<cr>
         nnoremap <space>cc :CocCommand<space>
 
         imap <f2> <plug>(coc-snippets-expand)
@@ -901,7 +979,7 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
         nmap <space>cr <Plug>(coc-rename)
         xmap <space>cA <Plug>(coc-codeaction-selected)
         nmap <space>cA <Plug>(coc-codeaction-selected)
-        nmap <space>ca <Plug>(coc-codeaction) " entire buffer
+        nmap <space>ca <Plug>(coc-codeaction)
         nmap <space>cf <Plug>(coc-fix-current)
         xmap <space>c= <Pg>(coc-format-selected)
         nmap <space>c= <Plug>(coc-format-selected)
@@ -916,11 +994,14 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
         omap ic <Plug>(coc-classobj-i)
         xmap ac <Plug>(coc-classobj-a)
         omap ac <Plug>(coc-classobj-a)
+        if has('nvim-0.4.3') || has('patch-8.2.0750')
+            nnoremap <nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<c-f>"
+            nnoremap <nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<c-b>"
+            inoremap <nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<c-f>"
+            inoremap <nowait><expr> <C-b> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<c-b>"
+        endif
 
         nnoremap <silent><nowait> <space>O  :<C-u>CocList -I symbols<cr>
-
-        command! -nargs=0 OrganizeImports
-            \ :<c-u>call CocAction('runCommand', 'editor.action.organizeImport')
 
         function! s:cocSettings()
             if !exists('g:did_coc_loaded')
@@ -938,11 +1019,22 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
                 \ <SID>check_back_space() ? "\<TAB>" :
                 \ coc#refresh()
 
+            call coc#config('explorer.quitOnOpen', 'true')
+            call coc#config('explorer.keyMappings.global', {
+                \ 'e': 'noop',
+                \ 'ee': 'open',
+                \ 'es': 'open:split',
+                \ 'ev': 'open:vsplit',
+                \ 'et': 'open:tab',
+                \ 's': v:false,
+                \ })
             call coc#config('suggest.autoTrigger', 'always') " always, trigger, none
             call coc#config('list.insertMappings', { '<c-c>' : 'do:exit' })
             call coc#config('signature.target', 'preview')
-            call coc#config('signature.target', 'echo')
-            call coc#config('signature.target', 'float')
+            " call coc#config('signature.target', 'echo')
+            " call coc#config('signature.target', 'float')
+            call coc#config('signature.preferShownAbove', 'false')
+            " call coc#config('signature.target', 'preview')
             call coc#config('python.jediEnabled', 'false')
             call coc#config('python.linting.pylintArgs', [
                 \ "--load-plugins=pylint_django",
@@ -961,6 +1053,8 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
                 autocmd!
                 autocmd CursorHold * silent call CocActionAsync('highlight')
                 autocmd ColorScheme * highlight CocUnusedHighlight ctermbg=NONE guibg=NONE guifg=#808080
+                " autocmd User CocOpenFloat call nvim_win_set_config(g:coc_last_float_win, {'relative': 'editor', 'row': 0, 'col': 0})
+                " autocmd User CocOpenFloat call nvim_win_set_width(g:coc_last_float_win, 9999)
             augroup END
         endfunction
 
@@ -1049,97 +1143,10 @@ let g:cycle_default_groups += [[['h1','h2','h3','h4','h5','h6'],'sub_tag']]
 " let g:cycle_default_groups += [['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']]
 " }}}
 
-" {{{ indentLine
-PkgInstall Yggdroot/indentLine
-if has('nvim')
-    PkgInstall lukas-reineke/indent-blankline.nvim
-    let g:indent_blankline_extra_indent_level = -1
-endif
-let g:indentLine_fileTypeExclude = ['vimwiki', 'markdown', 'fern']
-let g:indentline_setConceal = 0
-" }}}
-
 " {{{ localvimrc
 let g:localvimrc_persistent = 1
 let g:localvimrc_sandbox = 0
 PkgInstall embear/vim-localvimrc
-" }}}
-
-" {{{ fern
-PkgInstall lambdalisue/fern.vim
-PkgInstall lambdalisue/fern-git-status.vim
-PkgInstall lambdalisue/fern-mapping-git.vim
-if has('nvim')
-    PkgInstall antoinemadec/FixCursorHold.nvim
-endif
-
-nnoremap <silent> <space>e :<c-u>Fern -drawer -toggle -reveal=% .<cr><c-w>=
-
-augroup vimrc_fern
-    autocmd!
-    autocmd filetype fern call <sid>fernBufferSettings()
-augroup END
-
-let g:netrw_banner = 0
-if has('win32')
-    let g:netrw_scp_cmd = 'scp'
-endif
-" let g:loaded_netrw = 1
-" let g:loaded_netrwPlugin = 1
-" let g:loaded_netrwSettings = 1
-" let g:loaded_netrwFileHandlers = 1
-let g:fern#scheme#file#show_absolute_path_on_root_label = 1
-let g:fern#drawer_width = 40
-let g:fern#keepalt_on_edit = 1
-let g:fern#keepjumps_on_edit = 1
-let g:fern#disable_default_mappings = 1
-let g:fern#default_exclude = ''
-
-function! s:fernBufferSettings()
-    setlocal nonumber
-    nmap <buffer> <f1> <plug>(fern-action-help)
-    nmap <buffer> h <plug>(fern-action-collapse)
-    nmap <buffer> l <plug>(fern-action-expand)
-
-    " nmap <buffer> V V<plug>(fern-action-mark:set):normal! gv<cr>
-    " vmap <buffer> <nowait> <space> V
-    " vmap <buffer> j j<plug>(fern-action-mark:set):normal! gv<cr>
-    " vmap <buffer> k k<plug>(fern-action-mark:set):normal! gv<cr>
-    nmap <buffer> <nowait> m <plug>(fern-action-mark:toggle)
-    vmap <buffer> <nowait> m <plug>(fern-action-mark:toggle)
-    nmap <buffer> u <plug>(fern-action-mark:clear)
-    vmap <buffer> u V<plug>(fern-action-mark:clear)
-
-    nmap <buffer> - <plug>(fern-action-leave)
-    nmap <buffer> + <plug>(fern-action-enter)
-    nmap <silent> <buffer> <cr> <plug>(fern-action-open:edit):KeepWin FernDo close<cr>
-    nmap <silent> <buffer> oo <plug>(fern-action-open:edit):KeepWin FernDo close<cr>
-    nmap <silent> <buffer> <nowait> O <plug>(fern-action-open:select):KeepWin FernDo close<cr>
-    nmap <silent> <buffer> os <plug>(fern-action-open:split):KeepWin FernDo close<cr>
-    nmap <silent> <buffer> ov <plug>(fern-action-open:vsplit):KeepWin FernDo close<cr>
-    nmap <silent> <buffer> <nowait> t <plug>(fern-action-open:tabedit):KeepWin FernDo close<cr>
-    nnoremap <silent> <buffer> <expr> n v:searchforward ? ":\<c-u>normal! $n\<cr>" : 'n'
-    nnoremap <silent> <buffer> <expr> N v:searchforward ? 'N' : ":\<c-u>normal! $N\<cr>"
-    nmap <buffer> <nowait> H <Plug>(fern-action-hidden:toggle)
-    nmap <buffer> r <Plug>(fern-action-reload:all)
-    nmap <buffer> <nowait> f <plug>(fern-action-new-path)
-    nmap <buffer> D <plug>(fern-action-remove)
-    nmap <buffer> M <plug>(fern-action-move)
-    nmap <buffer> C <plug>(fern-action-copy)
-    nmap <buffer> R <plug>(fern-action-rename)
-    nmap <buffer> y <plug>(fern-action-clipboard-copy)
-    nmap <buffer> Y <plug>(fern-action-yank:path)
-    nmap <buffer> <nowait> d <plug>(fern-action-clipboard-move)
-    nmap <buffer> p <plug>(fern-action-clipboard-paste)
-    nmap <buffer> i <plug>(fern-action-include)
-    nmap <buffer> x <plug>(fern-action-exclude)
-    nmap <buffer> <nowait> g <plug>(fern-action-grep)
-    nmap <buffer> T <plug>(fern-action-terminal:split)
-    nmap <buffer> z <plug>(fern-action-zoom:full)
-    nmap <buffer> < <plug>(fern-action-git-stage)
-    nmap <buffer> > <plug>(fern-action-git-unstage)
-    nnoremap <silent> <buffer> <nowait> q :<c-u>FernDo close<cr>
-endfunction
 " }}}
 
 " {{{ xkbswitch
@@ -1247,6 +1254,12 @@ augroup vimrc
     autocmd filetype jinja.html call s:htmldjangoSettings()
     autocmd filetype make,snippets setlocal shiftwidth=8 softtabstop=8 noexpandtab
     autocmd filetype autohotkey let &commentstring=';%s'
+    autocmd filetype ps1 nnoremap <space>ch :CocCommand powershell.toggleTerminal<cr>
+    autocmd filetype ps1 nnoremap <space>cs :CocCommand powershell.evaluateLine<cr>
+    autocmd filetype ps1 xnoremap <space>cs :CocCommand powershell.evaluateSelection<cr>
+    autocmd filetype markdown unmap <buffer> ge
+    autocmd filetype markdown nnoremap <buffer> gX <Plug>Markdown_EditUrlUnderCursor
+    autocmd filetype markdown xnoremap <buffer> gX <Plug>Markdown_EditUrlUnderCursor
     autocmd BufNewFile *.ahk set bomb
     " autocmd TextChanged,TextChangedI * call AutoSaveIfVersionControlled() " FIXME: broken?
     autocmd filetype htmldjango call s:htmldjangoSettings()
@@ -1300,6 +1313,9 @@ elseif has ('vim8')
 else
     let g:slime_target = "tmux"
 endif
+xmap <a-c><a-c> <Plug>SlimeRegionSend
+nmap <a-c><a-c> <Plug>SlimeParagraphSend
+nmap <a-c>v     <Plug>SlimeConfig
 PkgInstall AndrewRadev/tagalong.vim
 PkgInstall honza/vim-snippets
 PkgInstall jototland/trivial-text-objects.vim
@@ -1316,6 +1332,11 @@ PkgInstall tpope/vim-commentary
 " For sql server, also install `sqlcmd`
 PkgInstall tpope/vim-dadbod
 PkgInstall kristijanhusak/vim-dadbod-ui
+nnoremap <silent> <leader>du :DBUIToggle<CR>
+nnoremap <silent> <leader>df :DBUIFindBuffer<CR>
+nnoremap <silent> <leader>dr :DBUIRenameBuffer<CR>
+nnoremap <silent> <leader>dl :DBUILastQueryInfo<CR>
+let g:db_ui_save_location = g:myvimdir . 'db_ui'
 let g:sf3 = 'sqlserver://sf3/kcsdbs'
 PkgInstall tpope/vim-eunuch
 PkgInstall tpope/vim-repeat
@@ -1323,6 +1344,7 @@ PkgInstall tpope/vim-fugitive
 PkgInstall tpope/vim-scriptease
 PkgInstall tpope/vim-surround
 PkgInstall tpope/vim-unimpaired
+PkgInstall tpope/vim-projectionist
 
 PkgInstall Konfekt/FastFold
 PkgInstall ConradIrwin/vim-bracketed-paste
@@ -1336,7 +1358,7 @@ PkgInstall Chandlercjy/vim-markdown-edit-code-block
 
 " Note taking app NV and vimwiki
 if executable('rg')
-    let g:nv_search_paths = ['~/Onedrive/markdown-notes']
+    let g:nv_search_paths = ['~/OneDrive/markdown-notes']
     " PkgInstall alok/notational-fzf-vim {'type': 'opt' }
     PkgInstall jototland/notational-fzf-vim {'type': 'opt' }
     if PkgInstalled('notational-fzf-vim')
@@ -1347,7 +1369,7 @@ if executable('rg')
     let g:nv_create_note_window = 'split'
     PkgInstall vimwiki/vimwiki { 'branch': 'dev' }
     let g:vimwiki_list = [{'path': '~/Onedrive/markdown-notes', 'syntax': 'markdown', 'ext': '.md'}]
-    let g:vimwiki_auto_chdir = 1
+    let g:vimwiki_auto_chdir = 0
     let g:vimwiki_create_link = 0
 endif
 
@@ -1376,6 +1398,15 @@ let g:colorscheme_switcher_define_mappings = 0
 nnoremap <leader><f1> :PrevColorScheme<cr>
 nnoremap <leader><f2> :NextColorScheme<cr>
 PkgInstall xolox/vim-misc
+" PkgInstall junegunn/vim-slash
+" if has('timers')
+"   " Blink 2 times with 50ms interval
+"   noremap <expr> <plug>(slash-after) 'zz'.slash#blink(2, 50)
+" endif
+PkgInstall romainl/vim-cool
+nnoremap <silent> <expr> n v:searchforward ? 'n' : 'N'
+nnoremap <silent> <expr> N v:searchforward ? 'N' : 'n'
+PkgInstall easymotion/vim-easymotion
 " }}}
 
 
@@ -1399,26 +1430,26 @@ function! Bomb()
     return &bomb ? 'bom' : ''
 endfunction
 
-function! SwapText(mode) abort
-    let old = getreg(v:register, 1, 1)
-    let oldT = getregtype(v:register)
-    if a:mode ==? 'v' || a:mode ==# "\<c-v>"
-        normal! gvy
-    elseif a:mode ==# "char"
-        normal! `[v`]y
-    elseif a:mode ==# "line"
-        normal! `[V`]y
-    elseif a:mode ==# "block"
-        execute "normal! `[\<c-v>`]y"
-    endif
-    let new = getreg(v:register, 1, 1)
-    let newT = getregtype(v:register)
-    call setreg(v:register, old, oldT)
-    normal! gvp
-    call setreg(v:register, new, newT)
-endfunction
-nnoremap <space>x :set operatorfunc=SwapText<cr>g@
-vnoremap <space>x :<c-u>call SwapText(visualmode())<cr>
+" function! SwapText(mode) abort
+"     let old = getreg(v:register, 1, 1)
+"     let oldT = getregtype(v:register)
+"     if a:mode ==? 'v' || a:mode ==# "\<c-v>"
+"         normal! gvy
+"     elseif a:mode ==# "char"
+"         normal! `[v`]y
+"     elseif a:mode ==# "line"
+"         normal! `[V`]y
+"     elseif a:mode ==# "block"
+"         execute "normal! `[\<c-v>`]y"
+"     endif
+"     let new = getreg(v:register, 1, 1)
+"     let newT = getregtype(v:register)
+"     call setreg(v:register, old, oldT)
+"     normal! gvp
+"     call setreg(v:register, new, newT)
+" endfunction
+" nnoremap <space>x :set operatorfunc=SwapText<cr>g@
+" vnoremap <space>x :<c-u>call SwapText(visualmode())<cr>
 
 " let g:vimwiki_conceallevel=0
 nnoremap \1 :<c-u>set conceallevel=0<cr>
@@ -1449,3 +1480,49 @@ if has("gui_running")
     endif
 endif
 " }}}
+
+command! -range FormatXML <line1>,<line2>! xmllint --format --noent --encode utf-8 --recover - | tail +2
+command! -range FormatJSON <line1>,<line2>! python -m json.tool
+
+command! -nargs=0 ToPDF call ToPDF()
+function! ToPDF()
+    if !executable('ps2pdf')
+        echoerr "ToPDF: Please install ps2pdf first!"
+        return
+    endif
+    let file_dir = expand('%:p:h')
+    let file_basename = expand('%:t:r')
+    let ps_file = tempname()
+    let pdf_file = file_dir . '/' . file_basename . '.pdf'
+    if filereadable(pdf_file) && input("'" . pdf_file . "' alredy exists. Overwrite? [y/N]") !~? '^y\%[es]$'
+        echoerr "ToPDF: not overwriting, exiting"
+        return
+    endif
+    echomsg "Writing '" . pdf_file . "'"
+    execute "hardcopy > " . fnameescape(ps_file) . " | !ps2pdf " . fnameescape(ps_file) . ' ' . fnameescape(pdf_file)
+    execute '!rm ' . fnameescape(ps_file)
+endfunction
+
+PkgInstall vim-ctrlspace/vim-ctrlspace
+PkgInstall yegappan/mru
+PkgInstall vim-scripts/hexman.vim
+if has('nvim')
+    PkgInstall github/copilot.vim
+endif
+
+command! -nargs=? -complete=file Open call Open(<f-args>)
+function Open(...)
+    if a:0 ==# 0
+        let fn = expand('<cfile>')
+    elseif a:0 ==# 1
+        let fn = a:1
+    else
+        echomsg "Open: too many arguments"
+        return
+    endif
+    if filereadable(fn)
+        python3 os.startfile(vim.eval('l:fn'))
+    else
+        echomsg 'Open: file "' . fn . '" doesn''t exist'
+    endif
+endfunction

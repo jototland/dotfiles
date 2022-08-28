@@ -68,21 +68,21 @@ return
     ;     SendEvent, {Insert}
     ; return
 
-    '::
-    "::
-        compose_stop()
-        SendInput % correct_case_of("æ")
-    return
-    `;::
-    :::
-        compose_stop()
-        SendInput % correct_case_of("ø")
-    return
-    [::
-    {::
-        compose_stop()
-        SendInput % correct_case_of("å")
-    return
+    ; '::
+    ; "::
+    ;     compose_stop()
+    ;     SendInput % correct_case_of("æ")
+    ; return
+    ; `;::
+    ; :::
+    ;     compose_stop()
+    ;     SendInput % correct_case_of("ø")
+    ; return
+    ; [::
+    ; {::
+    ;     compose_stop()
+    ;     SendInput % correct_case_of("å")
+    ; return
     *h::
         compose_stop()
         SendInput, {Blind}{Left}
@@ -217,9 +217,11 @@ compose_init() {
         compose_sequences.Add("ae", "æ")
         compose_sequences.Add("/o", "ø")
         compose_sequences.Add("oa", "å")
+        compose_sequences.Add("Oa", "å")
         compose_sequences.Add("AE", "Æ")
         compose_sequences.Add("/O", "Ø")
         compose_sequences.Add("oA", "Å")
+        compose_sequences.Add("OA", "Å")
 
         ;; umlaut äëïöüÄËÏÖÜ
         compose_sequences.Add(""" ", "̈¨")

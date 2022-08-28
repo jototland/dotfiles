@@ -163,9 +163,9 @@ fi
 #     xrdb -merge ~/.Xresources
 # fi
 
-# if type -P keychain > /dev/null; then
-#     eval $(keychain -q --eval)
-# fi
+if type -P keychain > /dev/null; then
+    eval $(keychain -q --eval)
+fi
 
 activate () {
     if [[ $# != 0 ]]; then

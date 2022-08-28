@@ -23,10 +23,13 @@ p::send_play_pause()
 [::Volume_Down
 ]::Volume_Up
 0::Volume_Mute
--::set_brightness(get_brightness() // 10 * 10 - 10)
-+-::set_brightness(0)
-=::set_brightness(get_brightness() // 10 * 10 + 10)
-+=::set_brightness(100)
++[::set_brightness(get_brightness() // 10 * 10 - 10)
+; +-::set_brightness(0)
++]::set_brightness(get_brightness() // 10 * 10 + 10)
+; +=::set_brightness(100)
+Enter::
+    show_hide_launch("ahk_class Rgui", """%USERPROFILE%\scoop\apps\r\current\bin\x64\Rgui.exe"" --quiet --no-save --no-restore", hide:=True)
+return
 #If
 
 send_play_pause() {

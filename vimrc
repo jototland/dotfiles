@@ -175,11 +175,23 @@ inoremap jk <esc>
 cnoremap jk <c-c><esc>
 tnoremap jk <c-\><c-n>
 
-inoremap <expr> <c-n> pumvisible() ? '<down>' : '<c-n>'
-inoremap <expr> <c-p> pumvisible() ? '<up>' : '<c-p>'
-inoremap <expr> <c-j> pumvisible() ? '<down>' : ''
-inoremap <expr> <c-k> pumvisible() ? '<up>' : ''
-inoremap <expr> <tab> pumvisible() ? '<c-y>' : '<tab>'
+" inoremap <expr> <c-n> pumvisible() ? '<down>' : '<c-n>'
+" inoremap <expr> <c-p> pumvisible() ? '<up>' : '<c-p>'
+" inoremap <expr> <c-j> pumvisible() ? '<down>' : ''
+" inoremap <expr> <c-k> pumvisible() ? '<up>' : ''
+" inoremap <expr> <tab> pumvisible() ? '<c-y>' : '<tab>'
+inoremap <silent> <expr> <tab> pumvisible() ? (coc#pum#visible() ? coc#pum#confirm() : '<c-y>') : '<tab>'
+inoremap <silent> <expr> <c-x><c-z> coc#pum#visible() ? coc#pum#stop() : "\<C-x>\<C-z>"
+inoremap <silent> <expr> <c-y> coc#pum#visible() ? coc#pum#confirm() : "\<C-y>"
+inoremap <silent> <expr> <c-e> coc#pum#visible() ? coc#pum#cancel() : "\<C-e>"
+inoremap <silent> <expr> <c-n> pumvisible() ? (coc#pum#visible() ? coc#pum#next(0) : '<down>') : '<c-n>'
+inoremap <silent> <expr> <c-p> pumvisible() ? (coc#pum#visible() ? coc#pum#prev(0) : '<up>') : '<c-p>'
+inoremap <silent> <expr> <c-j> pumvisible() ? (coc#pum#visible() ? coc#pum#next(0) : '<down>') : ''
+inoremap <silent> <expr> <c-k> pumvisible() ? (coc#pum#visible() ? coc#pum#prev(0) : '<up>') : ''
+inoremap <silent> <expr> <down> coc#pum#visible() ? coc#pum#next(0) : "\<down>"
+inoremap <silent> <expr> <up> coc#pum#visible() ? coc#pum#prev(0) : "\<up>"
+inoremap <silent> <expr> <PageDown> coc#pum#visible() ? coc#pum#scroll(1) : "\<PageDown>"
+inoremap <silent> <expr> <PageUp> coc#pum#visible() ? coc#pum#scroll(0) : "\<PageUp>"
 " inoremap <expr> <cr> pumvisible() ? '<c-y>' : '<c-g>u<cr>'
 inoremap <cr> <c-g>u<cr>
 
@@ -192,7 +204,6 @@ inoremap <expr> <c-l> <sid>ctrl_l()
 function s:ctrl_l()
     silent! call coc#float#close_all()
     silent! call coc#_hide()
-    " silent! call coc#float#check_related()
     if !has('nvim')
         call popup_clear()
     endif
@@ -387,7 +398,6 @@ let g:installCmds = []
 
 function! PkgInstalled(pkg)
     let dirname = substitute(a:pkg, '^.*/', '', '')
-    " return &rtp =~# ('[\\/]' . dirname . ',') ||
     return isdirectory(g:myvimdir . 'pack/minpac/start/' . dirname) ||
         \ isdirectory(g:myvimdir . 'pack/minpac/opt/' . dirname)
 endfunction
@@ -397,7 +407,6 @@ function! DownloadFile(fname, url) abort
         throw 'Please install `curl`'
     endif
     let result = ''
-    " let fname = a:base . '/' . a:name
     if empty(glob(a:fname))
         let dir = fnamemodify(a:fname, ':h')
         call mkdir(dir, 'p')
@@ -421,21 +430,21 @@ function! DownloadGit(dir, url) abort
 endfunction
 
 " FIXME: detect and warn if gzip is not installed
-function! InstallVimball(name, url) abort
-    packadd vimball
-    let archive = 'vimballarchive/' . a:name . (a:url =~ '\.gz$' ? '.gz' : '')
-    let dir = g:myvimdir . 'pack/vimball/opt/' . a:name
-    silent echo ':DownloadFile(' . g:myvimdir . archive . ', ' .  a:url ')'
-    call DownloadFile(g:myvimdir . archive, a:url)
-    call mkdir(dir, 'p')
-    let oldWin = win_getid()
-    execute 'split ' . g:myvimdir . archive
-    silent echo ':UseVimball ' . dir
-    silent echo 'bufnr() => ' . bufnr()
-    silent execute 'UseVimball ' . dir
-    wincmd c
-    call win_gotoid(oldWin)
-endfunction
+" function! InstallVimball(name, url) abort
+"     packadd vimball
+"     let archive = 'vimballarchive/' . a:name . (a:url =~ '\.gz$' ? '.gz' : '')
+"     let dir = g:myvimdir . 'pack/vimball/opt/' . a:name
+"     silent echo ':DownloadFile(' . g:myvimdir . archive . ', ' .  a:url ')'
+"     call DownloadFile(g:myvimdir . archive, a:url)
+"     call mkdir(dir, 'p')
+"     let oldWin = win_getid()
+"     execute 'split ' . g:myvimdir . archive
+"     silent echo ':UseVimball ' . dir
+"     silent echo 'bufnr() => ' . bufnr()
+"     silent execute 'UseVimball ' . dir
+"     wincmd c
+"     call win_gotoid(oldWin)
+" endfunction
 
 function! MkSpell()
     for d in glob('~/.vim/spell/*.add', 1, 1)
@@ -449,8 +458,9 @@ AtInstallTime call MkSpell()
 
 AtInstallTime call DownloadFile(g:myvimdir . 'plugin/Redir.vim',
     \ 'https://gist.githubusercontent.com/romainl/eae0a260ab9c135390c30cd370c20cd7/raw/407b5abf42a64cef1749f8b73bbe4572868eaa65/redir.vim')
+AtInstallTime call DownloadFile(g:myvimdir . 'plugin/hexedit.vim', 'https://raw.githubusercontent.com/KevinGoodsell/vim-scripts/master/plugin/hexedit.vim')
 
-AtInstallTime call InstallVimball('astronaut', 'http://www.drchip.org/astronaut/vim/vbafiles/astronaut.vba.gz')
+" AtInstallTime call InstallVimball('astronaut', 'http://www.drchip.org/astronaut/vim/vbafiles/astronaut.vba.gz')
 " }}}
 
 " {{{ Other utility and helper function
@@ -845,7 +855,6 @@ function! WindowIdentify(...)
     let colorcolumn = &colorcolumn
     let cmd = join(a:000, ' ')
     set cursorcolumn cursorline
-    " let &colorcolumn=join(range(1,200), ',')
     redraw
     execute cmd
     sleep 300m
@@ -921,7 +930,7 @@ if has('python3')
 endif
 " }}}
 
-" {{{ coc
+"" {{{ coc
 if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
     PkgInstall neoclide/coc.nvim {'branch': 'release', 'type': 'opt'}
 
@@ -933,135 +942,135 @@ if executable('node') && (!has("win32") || has("nvim") || has("gui_running"))
             \ 'htmldjango' : 'html'
             \ }
 
-        let g:coc_global_extensions = [
-            \ 'coc-explorer',
-            \ 'coc-tsserver',
-            \ 'coc-json',
-            \ 'coc-html',
-            \ 'coc-css',
-            \ 'coc-emmet',
-            \ 'coc-pyright',
-            \ 'coc-r-lsp',
-            \ 'coc-omnisharp',
-            \ 'coc-vimlsp',
-            \ 'coc-snippets',
-            \ 'coc-rls',
-            \ 'coc-powershell',
-            \ 'coc-db',
-            \ 'coc-julia',
-            \ 'coc-bootstrap-classname'
-            \ ]
+       let g:coc_global_extensions = [
+           \ 'coc-explorer',
+           \ 'coc-tsserver',
+           \ 'coc-json',
+           \ 'coc-html',
+           \ 'coc-css',
+           \ 'coc-emmet',
+           \ 'coc-pyright',
+           \ 'coc-r-lsp',
+           \ 'coc-omnisharp',
+           \ 'coc-vimlsp',
+           \ 'coc-snippets',
+           \ 'coc-rls',
+           \ 'coc-powershell',
+           \ 'coc-db',
+           \ 'coc-bootstrap-classname'
+           \ ]
 
-            " disabled for now
-            " \ 'coc-kite',
-            "\ 'coc-pairs'
+           " disabled for now
+           " \ 'coc-kite',
+           " \ 'coc-julia',
+           "\ 'coc-pairs'
 
-        nnoremap <silent> <space>e :<c-u>CocCommand explorer<cr>
-        nnoremap <space>cc :CocCommand<space>
+       nnoremap <silent> <space>e :<c-u>CocCommand explorer<cr>
+       nnoremap <space>cc :CocCommand<space>
 
-        imap <f2> <plug>(coc-snippets-expand)
-        xmap <s-f2> <plug>(coc-convert-snippet)
-        let g:coc_snippets_next = '<c-j>'
-        let g:coc_snippets_prev = '<c-k>'
+       imap <f2> <plug>(coc-snippets-expand)
+       xmap <s-f2> <plug>(coc-convert-snippet)
+       let g:coc_snippets_next = '<c-j>'
+       let g:coc_snippets_prev = '<c-k>'
 
-        set updatetime=300
-        nmap [g <Plug>(coc-diagnostic-prev)
-        nmap ]g <Plug>(coc-diagnostic-next)
-        nnoremap <silent> [og :CocDiagnostics<cr>
-        nnoremap <silent> ]og :lclose<cr>
+       " set updatetime=300
+       nmap [g <Plug>(coc-diagnostic-prev)
+       nmap ]g <Plug>(coc-diagnostic-next)
+       nnoremap <silent> [og :CocDiagnostics<cr>
+       nnoremap <silent> ]og :lclose<cr>
 
-        nmap gd <Plug>(coc-definition)
-        nmap gy <Plug>(coc-type-definition)
-        nmap gi <Plug>(coc-implementation)
-        nmap gr <Plug>(coc-references)
-        nnoremap <silent> gK K
-        nnoremap <silent> K :call CocAction('doHover')<cr>
-        nmap <space>cr <Plug>(coc-rename)
-        xmap <space>cA <Plug>(coc-codeaction-selected)
-        nmap <space>cA <Plug>(coc-codeaction-selected)
-        nmap <space>ca <Plug>(coc-codeaction)
-        nmap <space>cf <Plug>(coc-fix-current)
-        xmap <space>c= <Pg>(coc-format-selected)
-        nmap <space>c= <Plug>(coc-format-selected)
-        nmap <space>cR <Plug>(coc-range-select)
-        xmap <space>cR <Plug>(coc-range-select)
+       nmap gd <Plug>(coc-definition)
+       nmap gy <Plug>(coc-type-definition)
+       nmap gi <Plug>(coc-implementation)
+       nmap gr <Plug>(coc-references)
+       nnoremap <silent> gK K
+       nnoremap <silent> K :call CocAction('doHover')<cr>
+       nmap <space>cr <Plug>(coc-rename)
+       xmap <space>cA <Plug>(coc-codeaction-selected)
+       nmap <space>cA <Plug>(coc-codeaction-selected)
+       nmap <space>ca <Plug>(coc-codeaction)
+       nmap <space>cf <Plug>(coc-fix-current)
+       xmap <space>c= <Pg>(coc-format-selected)
+       nmap <space>c= <Plug>(coc-format-selected)
+       nmap <space>cR <Plug>(coc-range-select)
+       xmap <space>cR <Plug>(coc-range-select)
 
-        xmap if <Plug>(coc-funcobj-i)
-        omap if <Plug>(coc-funcobj-i)
-        xmap af <Plug>(coc-funcobj-a)
-        omap af <Plug>(coc-funcobj-a)
-        xmap ic <Plug>(coc-classobj-i)
-        omap ic <Plug>(coc-classobj-i)
-        xmap ac <Plug>(coc-classobj-a)
-        omap ac <Plug>(coc-classobj-a)
-        if has('nvim-0.4.3') || has('patch-8.2.0750')
-            nnoremap <nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<c-f>"
-            nnoremap <nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<c-b>"
-            inoremap <nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<c-f>"
-            inoremap <nowait><expr> <C-b> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<c-b>"
-        endif
+       xmap if <Plug>(coc-funcobj-i)
+       omap if <Plug>(coc-funcobj-i)
+       xmap af <Plug>(coc-funcobj-a)
+       omap af <Plug>(coc-funcobj-a)
+       xmap ic <Plug>(coc-classobj-i)
+       omap ic <Plug>(coc-classobj-i)
+       xmap ac <Plug>(coc-classobj-a)
+       omap ac <Plug>(coc-classobj-a)
+       if has('nvim-0.4.3') || has('patch-8.2.0750')
+           nnoremap <nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<c-f>"
+           nnoremap <nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<c-b>"
+           inoremap <nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<c-f>"
+           inoremap <nowait><expr> <C-b> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<c-b>"
+       endif
 
-        nnoremap <silent><nowait> <space>O  :<C-u>CocList -I symbols<cr>
+       nnoremap <silent><nowait> <space>O  :<C-u>CocList -I symbols<cr>
 
-        function! s:cocSettings()
-            if !exists('g:did_coc_loaded')
-                return
-            endif
+       function! s:cocSettings()
+           if !exists('g:did_coc_loaded')
+               return
+           endif
 
-            " inoremap <silent> <expr> <tab>
-            "     \ pumvisible() ? "\<c-y>" :
-            "     \ <SID>check_back_space() ? "\<tab>" :
-            "     \ coc#refresh()
+           " inoremap <silent> <expr> <tab>
+           "     \ pumvisible() ? "\<c-y>" :
+           "     \ <SID>check_back_space() ? "\<tab>" :
+           "     \ coc#refresh()
 
-            inoremap <silent><expr> <TAB>
-                \ pumvisible() ? coc#_select_confirm() :
-                \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
-                \ <SID>check_back_space() ? "\<TAB>" :
-                \ coc#refresh()
+           inoremap <silent><expr> <TAB>
+               \ pumvisible() ? coc#_select_confirm() :
+               \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
+               \ <SID>check_back_space() ? "\<TAB>" :
+               \ coc#refresh()
 
-            call coc#config('explorer.quitOnOpen', 'true')
-            call coc#config('explorer.keyMappings.global', {
-                \ 'e': 'noop',
-                \ 'ee': 'open',
-                \ 'es': 'open:split',
-                \ 'ev': 'open:vsplit',
-                \ 'et': 'open:tab',
-                \ 's': v:false,
-                \ })
-            call coc#config('suggest.autoTrigger', 'always') " always, trigger, none
-            call coc#config('list.insertMappings', { '<c-c>' : 'do:exit' })
-            call coc#config('signature.target', 'preview')
-            " call coc#config('signature.target', 'echo')
-            " call coc#config('signature.target', 'float')
-            call coc#config('signature.preferShownAbove', 'false')
-            " call coc#config('signature.target', 'preview')
-            call coc#config('python.jediEnabled', 'false')
-            call coc#config('python.linting.pylintArgs', [
-                \ "--load-plugins=pylint_django",
-                \ "--load-plugins=pylint_django.checkers.migrations",
-                \ "--errors-only",
-                \ ])
-            " call coc#config('diagnostic.messageTarget', 'echo')
-            " call coc#config('snippets.extends', {
-            "     \ 'htmldjango' : ['html']
-            "     \ })
-            " call coc#config('snippets.textmateSnippetsRoots', [
-            "     \ g:myvimdir . 'vsnip'
-            "     \ ])
+           call coc#config('explorer.quitOnOpen', 'true')
+           call coc#config('explorer.keyMappings.global', {
+               \ 'e': 'noop',
+               \ 'ee': 'open',
+               \ 'es': 'open:split',
+               \ 'ev': 'open:vsplit',
+               \ 'et': 'open:tab',
+               \ 's': v:false,
+               \ })
+           call coc#config('suggest.autoTrigger', 'always') " always, trigger, none
+           call coc#config('list.insertMappings', { '<c-c>' : 'do:exit' })
+           call coc#config('signature.target', 'preview')
+           " call coc#config('signature.target', 'echo')
+           " call coc#config('signature.target', 'float')
+           call coc#config('signature.preferShownAbove', 'false')
+           " call coc#config('signature.target', 'preview')
+           call coc#config('python.jediEnabled', 'false')
+           call coc#config('python.linting.pylintArgs', [
+               \ "--load-plugins=pylint_django",
+               \ "--load-plugins=pylint_django.checkers.migrations",
+               \ "--errors-only",
+               \ ])
+           " call coc#config('diagnostic.messageTarget', 'echo')
+           " call coc#config('snippets.extends', {
+           "     \ 'htmldjango' : ['html']
+           "     \ })
+           " call coc#config('snippets.textmateSnippetsRoots', [
+           "     \ g:myvimdir . 'vsnip'
+           "     \ ])
 
-            augroup vimrc_coc
-                autocmd!
-                autocmd CursorHold * silent call CocActionAsync('highlight')
-                autocmd ColorScheme * highlight CocUnusedHighlight ctermbg=NONE guibg=NONE guifg=#808080
-                " autocmd User CocOpenFloat call nvim_win_set_config(g:coc_last_float_win, {'relative': 'editor', 'row': 0, 'col': 0})
-                " autocmd User CocOpenFloat call nvim_win_set_width(g:coc_last_float_win, 9999)
-            augroup END
-        endfunction
+           augroup vimrc_coc
+               autocmd!
+               autocmd CursorHold * silent call CocActionAsync('highlight')
+               autocmd ColorScheme * highlight CocUnusedHighlight ctermbg=NONE guibg=NONE guifg=#808080
+               " autocmd User CocOpenFloat call nvim_win_set_config(g:coc_last_float_win, {'relative': 'editor', 'row': 0, 'col': 0})
+               " autocmd User CocOpenFloat call nvim_win_set_width(g:coc_last_float_win, 9999)
+           augroup END
+       endfunction
 
-        AfterVimEnter call s:cocSettings()
+       " AfterVimEnter call s:cocSettings()
     endif
 endif
-" }}}
+"" }}}
 
 " {{{ fzf
 if has("unix")
@@ -1382,14 +1391,13 @@ if executable('ctags-exuberant')
     endif
 endif
 
-PkgInstall metakirby5/codi.vim
 if has('python3')
     PkgInstall puremourning/vimspector { 'type' : 'opt' }
     if PkgInstalled('vimspector')
         packadd vimspector
     endif
 endif
-" PkgInstall kshenoy/vim-signature
+PkgInstall kshenoy/vim-signature
 PkgInstall iamcco/markdown-preview.nvim { 'do': 'packloadall! | call mkdp#util#install()' }
 PkgInstall morhetz/gruvbox
 PkgInstall tpope/vim-vividchalk
@@ -1398,11 +1406,11 @@ let g:colorscheme_switcher_define_mappings = 0
 nnoremap <leader><f1> :PrevColorScheme<cr>
 nnoremap <leader><f2> :NextColorScheme<cr>
 PkgInstall xolox/vim-misc
-" PkgInstall junegunn/vim-slash
-" if has('timers')
-"   " Blink 2 times with 50ms interval
-"   noremap <expr> <plug>(slash-after) 'zz'.slash#blink(2, 50)
-" endif
+PkgInstall junegunn/vim-slash
+if has('timers')
+  " Blink 2 times with 50ms interval
+  noremap <expr> <plug>(slash-after) 'zz'.slash#blink(2, 50)
+endif
 PkgInstall romainl/vim-cool
 nnoremap <silent> <expr> n v:searchforward ? 'n' : 'N'
 nnoremap <silent> <expr> N v:searchforward ? 'N' : 'n'
@@ -1505,24 +1513,34 @@ endfunction
 
 PkgInstall vim-ctrlspace/vim-ctrlspace
 PkgInstall yegappan/mru
-PkgInstall vim-scripts/hexman.vim
-if has('nvim')
-    PkgInstall github/copilot.vim
-endif
 
-command! -nargs=? -complete=file Open call Open(<f-args>)
-function Open(...)
-    if a:0 ==# 0
-        let fn = expand('<cfile>')
-    elseif a:0 ==# 1
-        let fn = a:1
-    else
-        echomsg "Open: too many arguments"
-        return
-    endif
-    if filereadable(fn)
-        python3 os.startfile(vim.eval('l:fn'))
-    else
-        echomsg 'Open: file "' . fn . '" doesn''t exist'
-    endif
-endfunction
+" command! -nargs=? -complete=file Open call Open(<f-args>)
+" function Open(...)
+"     if a:0 ==# 0
+"         let fn = expand('<cfile>')
+"     elseif a:0 ==# 1
+"         let fn = a:1
+"     else
+"         echomsg "Open: too many arguments"
+"         return
+"     endif
+"     if filereadable(fn)
+"         python3 os.startfile(vim.eval('l:fn'))
+"     else
+"         echomsg 'Open: file "' . fn . '" doesn''t exist'
+"     endif
+" endfunction
+
+" function Windows()
+"     set ff=dos
+"     set fenc=utf16le
+" endfunction
+command! -nargs=0 Unix set ff=unix fenc=utf-8 nobomb
+command! -nargs=0 UnixLatin1 set ff=unix fenc=iso-8859-1 nobomb
+command! -nargs=0 UnixAscii set ff=unix fenc=ascii nobomb
+
+command! -nargs=0 Windows set ff=dos fenc=utf-16le bomb
+command! -nargs=0 WinLatin1 set ff=dos fenc=cp1252 nobomb
+
+command! -nargs=0 DosLatin1 set ff=dos fenc=cp850 nobomb
+command! -nargs=0 Dos set ff=dos fenc=cp437 nobomb
